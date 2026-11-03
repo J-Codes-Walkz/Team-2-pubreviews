@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}The Second City Pint — Discover Birmingham's Best Boozers{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-banner py-5">
+    <div class="container py-3">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-warning text-dark fw-bold mb-3 px-3 py-2 text-uppercase">
+                    <i class="fa-solid fa-location-dot me-1"></i>Birmingham, UK Community Guide
+                </span>
+                <h1 class="display-5 fw-bold mb-3">Honest Reviews of Brum's Finest Pints, Cobs &amp; Snugs</h1>
+                <p class="lead text-light opacity-90 mb-4">
+                    From Grade II* tiled Victorian palaces in Aston to hazy craft taprooms on the Stirchley Beer Mile. Rated by locals who care about how the ale is kept.
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'reviews:create' %}" class="btn btn-amber btn-lg px-4">
+                        <i class="fa-solid fa-pen-to-square me-2"></i>Log a Pint Review
+                    </a>
+                    <a href="#filter-bar" class="btn btn-outline-light btn-lg px-4">
+                        Filter by Area &amp; Amenities
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Dynamic Filter Controls -->
+<section id="filter-bar" class="container mt-n4 position-relative" style="margin-top: -28px;">
+    <form method="get" class="card shadow-sm border-0 p-4 rounded-4" style="border: 1px solid var(--pub-border) !important;">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase text-muted">Birmingham District</label>
+                <select name="area" class="form-select">
+                    <option value="">All Brum Areas</option>
+                    {% for code, label in brum_areas %}
+                        <option value="{{ code }}" {% if selected_area == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase text-muted">Pub Style</label>
+                <select name="category" class="form-select">
+                    <option value="">All Styles</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase text-muted">Search Pub or Ale</label>
+                <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="e.g. Craven Arms, Bathams...">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-uppercase text-muted">Sort By</label>
+                <select name="sort" class="form-select">
+                    <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest Reviews</option>
+                    <option value="top_pint" {% if selected_sort == 'top_pint' %}selected{% endif %}>Highest Pint Quality</option>
+                    <option value="most_liked" {% if selected_sort == 'most_liked' %}selected{% endif %}>Most Cheers (Likes)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Amenity Checkboxes -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3 pt-3 border-top">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <span class="small fw-bold text-uppercase text-muted me-1">Must Have:</span>
+
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="chk_cask" name="cask" value="1" {% if active_amenities.cask %}checked{% endif %}>
+                    <label class="form-check-label small fw-medium" for="chk_cask">🍺 Cask Ale</label>
+                </div>
+
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="chk_cobs" name="cobs" value="1" {% if active_amenities.cobs %}checked{% endif %}>
+                    <label class="form-check-label small fw-medium" for="chk_cobs">🥪 Cobs / Grub</label>
+                </div>
+
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="chk_garden" name="garden" value="1" {% if active_amenities.garden %}checked{% endif %}>
+                    <label class="form-check-label small fw-medium" for="chk_garden">☀️ Beer Garden</label>
+                </div>
+
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="chk_dogs" name="dogs" value="1" {% if active_amenities.dogs %}checked{% endif %}>
+                    <label class="form-check-label small fw-medium" for="chk_dogs">🐕 Dog Friendly</label>
+                </div>
+
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="chk_sports" name="sports" value="1" {% if active_amenities.sports %}checked{% endif %}>
+                    <label class="form-check-label small fw-medium" for="chk_sports">📺 Live Sports</label>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary btn-sm px-3">Reset</a>
+                <button type="submit" class="btn btn-amber btn-sm px-4">
+                    <i class="fa-solid fa-filter me-1"></i>Apply Filters
+                </button>
+            </div>
+        </div>
+    </form>
+</section>
+
+<!-- Pub Review Card Grid -->
+<section class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Latest Second City Dispatches</h2>
+        <span class="text-muted small">{{ page_obj.paginator.count|default:reviews.count }} pub review(s) found</span>
+    </div>
+
+    <div class="row g-4">
+        {% for review in reviews %}
+        <div class="col-md-6 col-lg-4">
+            <article class="pub-card h-100 d-flex flex-column">
+                <div class="position-relative">
+                    <a href="{{ review.get_absolute_url }}">
+                        <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img">
+                    </a>
+                    <!-- Birmingham Area Pill Badge -->
+                    <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2 shadow-sm">
+                        <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
+                    </span>
+                    <!-- Price Point Pill -->
+                    <span class="badge rounded-pill bg-dark bg-opacity-75 text-warning position-absolute top-0 end-0 m-3 px-2 py-1">
+                        {{ review.price_point }}
+                    </span>
+                </div>
+
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                    <!-- Pub Name & Pint Quality Stars -->
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="text-uppercase fw-bold small text-success">{{ review.pub_name }}</span>
+                        <div class="small" title="Pint Quality: {{ review.pint_quality_rating }}/5">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.pint_quality_rating %}
+                                    <i class="fa-solid fa-star star-filled"></i>
+                                {% else %}
+                                    <i class="fa-regular fa-star star-empty"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <h3 class="h5 fw-bold mb-2">
+                        <a href="{{ review.get_absolute_url }}" class="text-decoration-none text-dark stretched-link">
+                            {{ review.title }}
+                        </a>
+                    </h3>
+
+                    <p class="text-muted small mb-3 flex-grow-1">{{ review.excerpt }}</p>
+
+                    <!-- Amenity Micro-Badges -->
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        {% if review.serves_cask_ale %}
+                            <span class="badge badge-amenity">🍺 Cask</span>
+                        {% endif %}
+                        {% if review.is_dog_friendly %}
+                            <span class="badge badge-amenity">🐕 Dog Friendly</span>
+                        {% endif %}
+                        {% if review.has_beer_garden %}
+                            <span class="badge badge-amenity">☀️ Garden</span>
+                        {% endif %}
+                        {% if review.serves_cobs_or_food %}
+                            <span class="badge badge-amenity">🥪 Cobs/Grub</span>
+                        {% endif %}
+                        {% if review.shows_live_sports %}
+                            <span class="badge badge-amenity">📺 Sports</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Card Footer Metadata -->
+                    <div class="pt-3 border-top d-flex justify-content-between align-items-center small text-muted">
+                        <span>
+                            <i class="fa-regular fa-user me-1"></i>{{ review.author.username }} &bull; {{ review.created_on|date:"d M Y" }}
+                        </span>
+                        <span class="fw-semibold text-dark">
+                            <i class="fa-solid fa-heart text-danger me-1"></i>{{ review.like_count|default:review.total_likes }}
+                            <i class="fa-regular fa-comment ms-2 me-1"></i>{{ review.comment_count|default:review.comments.count }}
+                        </span>
+                    </div>
+                </div>
+            </article>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5 bg-white rounded-4 border p-4">
+                <i class="fa-solid fa-beer-mug-empty fa-3x text-warning mb-3"></i>
+                <h3 class="h4">No Birmingham pubs matched those exact filters</h3>
+                <p class="text-muted mb-3">Try clearing a filter or be the first to review a local in that district!</p>
+                <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary me-2">Clear Filters</a>
+                <a href="{% url 'reviews:create' %}" class="btn btn-amber">Write a Review</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

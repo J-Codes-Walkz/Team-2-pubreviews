@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit Review: {{ object.pub_name }}{% else %}Write a Birmingham Pub Review{% endif %} — The Second City Pint{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                <h1 class="h2 mb-1">
+                    {% if object %}Edit Review for {{ object.pub_name }}{% else %}Review a Birmingham Boozer{% endif %}
+                </h1>
+                <p class="text-muted mb-4">Share honest notes on the ale condition, price of a pint, and atmosphere.</p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Please check the highlighted fields below:</strong>
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Pub Name *</label>
+                            {{ form.pub_name }}
+                            <div class="text-danger small">{{ form.pub_name.errors }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Birmingham District *</label>
+                            {{ form.brum_area }}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Review Headline *</label>
+                            {{ form.title }}
+                            <div class="text-danger small">{{ form.title.errors }}</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Pub Style / Category</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Price Point *</label>
+                            {{ form.price_point }}
+                        </div>
+
+                        <!-- Ratings Row -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">🍺 Pint Quality</label>
+                            {{ form.pint_quality_rating }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">🔥 Atmosphere</label>
+                            {{ form.atmosphere_rating }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">💷 Value Rating</label>
+                            {{ form.value_rating }}
+                        </div>
+
+                        <!-- Amenities Checkboxes -->
+                        <div class="col-12">
+                            <div class="p-3 rounded-3 bg-light border mt-2">
+                                <span class="d-block fw-semibold small text-uppercase text-muted mb-2">Tick Available Pub Amenities</span>
+                                <div class="d-flex flex-wrap gap-4">
+                                    <div class="form-check">
+                                        {{ form.serves_cask_ale }}
+                                        <label class="form-check-label">🍺 Real Cask Ale</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.serves_cobs_or_food }}
+                                        <label class="form-check-label">🥪 Serves Cobs / Food</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.has_beer_garden }}
+                                        <label class="form-check-label">☀️ Beer Garden</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.is_dog_friendly }}
+                                        <label class="form-check-label">🐕 Dog Friendly</label>
+                                    </div>
+                                    <div class="form-check">
+                                        {{ form.shows_live_sports }}
+                                        <label class="form-check-label">📺 Shows Live Sports</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Short Card Summary (Excerpt)</label>
+                            {{ form.excerpt }}
+                            <div class="form-text">{{ form.excerpt.help_text }}</div>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Full Review *</label>
+                            {{ form.content }}
+                            <div class="text-danger small">{{ form.content.errors }}</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Featured Image URL</label>
+                            {{ form.featured_image }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Publication Status</label>
+                            {{ form.status }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        <button type="submit" class="btn btn-amber px-4">
+                            <i class="fa-solid fa-check me-1"></i>{% if object %}Save Changes{% else %}Publish Review{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

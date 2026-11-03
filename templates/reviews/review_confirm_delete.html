@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Delete Review — The Second City Pint{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                <h1 class="h3">Call Last Orders on This Review?</h1>
+                <p class="text-muted">Are you sure you want to permanently delete your review of <strong>{{ object.pub_name }}</strong> ("{{ object.title }}")?</p>
+                <form method="post" class="d-flex justify-content-center gap-2 mt-3">
+                    {% csrf_token %}
+                    <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary px-4">Keep Review</a>
+                    <button type="submit" class="btn btn-danger px-4">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
