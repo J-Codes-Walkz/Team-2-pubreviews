@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -356,13 +357,22 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
             ):
                 form.instance.featured_image = existing_pub.featured_image
 
-        # Remove any unreviewed directory placeholder for this same pub so the real review replaces it
-        PubReview.objects.filter(
-            author__username="pub_directory",
-            pub_name__iexact=form.instance.pub_name.strip(),
-            brum_area=form.instance.brum_area,
-        ).delete()
-        response = super().form_valid(form)
+        # Find any unreviewed directory placeholder(s) for this same pub so we can
+        # move their comments, likes, and bookmarks onto the new review instead of losing them.
+        placeholders = list(
+            PubReview.objects.filter(
+                author__username="pub_directory",
+                pub_name__iexact=form.instance.pub_name.strip(),
+                brum_area=form.instance.brum_area,
+            )
+        )
+        with transaction.atomic():
+            response = super().form_valid(form)
+            for placeholder in placeholders:
+                placeholder.comments.all().update(review=self.object)
+                self.object.likes.add(*placeholder.likes.all())
+                self.object.bookmarks.add(*placeholder.bookmarks.all())
+                placeholder.delete()
         messages.success(
             self.request,
             f"Cheers! Your review of {self.object.pub_name} has been posted.",
