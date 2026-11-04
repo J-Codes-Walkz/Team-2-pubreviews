@@ -22,6 +22,8 @@ class PubReviewAdmin(admin.ModelAdmin):
         "brum_area",
         "category",
         "price_point",
+        "pint_ordered",
+        "pint_price",
         "pint_quality_rating",
         "author",
         "status",
@@ -37,16 +39,24 @@ class PubReviewAdmin(admin.ModelAdmin):
         "is_dog_friendly",
         "serves_cobs_or_food",
     )
-    search_fields = ("pub_name", "title", "content", "author__username")
+    search_fields = ("pub_name", "title", "content", "pint_ordered", "author__username")
     prepopulated_fields = {"slug": ("pub_name", "title")}
     inlines = [CommentInline]
 
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ("author", "review", "approved", "created_on")
+    list_display = (
+        "author",
+        "review",
+        "pint_quality_rating",
+        "pint_ordered",
+        "pint_price",
+        "approved",
+        "created_on",
+    )
     list_filter = ("approved", "created_on")
-    search_fields = ("author__username", "body", "review__pub_name")
+    search_fields = ("author__username", "body", "pint_ordered", "review__pub_name")
     actions = ["approve_comments"]
 
     @admin.action(description="Approve selected comments")

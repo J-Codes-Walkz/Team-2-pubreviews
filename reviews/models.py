@@ -1,9 +1,11 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import (
     MinValueValidator,
     MaxValueValidator,
     FileExtensionValidator,
+    URLValidator,
 )
 from django.urls import reverse
 from django.utils.text import slugify
@@ -149,6 +151,10 @@ class PubReview(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        validators=[
+            MinValueValidator(Decimal("1.00")),
+            MaxValueValidator(Decimal("25.00")),
+        ],
         help_text="Price paid for a pint in £ (e.g., 4.50)",
     )
 
@@ -162,6 +168,7 @@ class PubReview(models.Model):
         max_length=500,
         blank=True,
         default=DEFAULT_IMAGE_URL,
+        validators=[URLValidator(schemes=["http", "https"])],
         help_text="Direct URL to a photo of the pub or pint (leave blank for default pub image).",
     )
     uploaded_image = models.FileField(
@@ -409,6 +416,10 @@ class Comment(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        validators=[
+            MinValueValidator(Decimal("1.00")),
+            MaxValueValidator(Decimal("25.00")),
+        ],
     )
     uploaded_image = models.FileField(
         "Upload a Photo (Optional)",

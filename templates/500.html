@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Server Error (500) — The Second City Pint{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+                <i class="fa-solid fa-triangle-exclamation fa-3x text-danger mb-3"></i>
+                <h1 class="h2 fw-bold mb-2">Spilt Pint in the Cellar (500)</h1>
+                <p class="text-muted mb-4">
+                    Something went wrong while pouring that page. Please head back to the main bar and try again.
+                </p>
+                <a href="/" class="btn btn-amber px-4">Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

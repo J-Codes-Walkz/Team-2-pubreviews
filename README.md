@@ -1,6 +1,6 @@
 # The Second City Pint 🍺
 
-**Birmingham's community pub review site.** Find a proper pint in Brum, read honest reviews from fellow Brummies, and share your own: pint quality, atmosphere, value, and whether they do a decent cob.
+**Birmingham's community pub review site.** Find a proper pint in Brum, read honest reviews from fellow Brummies, and share your own: pint quality, atmosphere, value, what's on tap, real pint prices (£), and whether they do a decent cob.
 
 Built by **Team 2** as a Django full-stack project.
 
@@ -28,12 +28,13 @@ Built by **Team 2** as a Django full-stack project.
 
 ## Project Goals
 
-Birmingham has one of the best pub scenes in the UK, from Victorian boozers in the Jewellery Quarter to craft taprooms in Digbeth, but reviews are spread across generic sites that don't care about the things locals do. The Second City Pint is for that crowd.
+Birmingham has one of the best pub scenes in the UK, from Victorian boozers in the Jewellery Quarter to craft taprooms in Digbeth and Stirchley, but reviews are spread across generic sites that don't care about the things locals do. The Second City Pint is for that crowd.
 
 **Site goals**
-- Let anyone browse and search Birmingham pub reviews by area, pub type and amenities.
-- Let registered users post, edit and delete their own reviews.
-- Build a community through comments and "raise a glass" likes.
+- Let anyone browse and search **470 verified Birmingham pubs** across **32 Birmingham districts** and **7 venue categories**, filtered by area, pub style, and amenities, or sorted by GPS proximity and real pint prices.
+- Let registered users post, edit and delete their own reviews with auto-filled pub details and direct photo uploads.
+- Build a community through multi-review star rating averages, "What's on Tap" pint price reports, community photo galleries, and "raise a glass" likes.
+- Reward exploration with **My Pint Passport** (32 Birmingham district stamps, "Want to Visit" bookmarks, and 9 collectible Brummie badges).
 - Give admins the tools to moderate content.
 
 **Target audience**
@@ -112,34 +113,25 @@ Full details, acceptance criteria and tasks are in each linked issue.
 | [#20](https://github.com/J-Codes-Walkz/Team-2-pubreviews/issues/20) | developer | seed the database with Birmingham pubs | the site looks complete for demos |
 | [#21](https://github.com/J-Codes-Walkz/Team-2-pubreviews/issues/21) | developer | have automated tests | we can change code with confidence |
 
-### Won't Have (this sprint)
-
-- User profile pages
-- Map view of pubs
-- Uploading images directly (we use image URLs for now)
-
 ---
 
 ## Features
 
 ### Existing features
 
-- **Homepage review feed:** paginated cards (9 per page) showing pub image, name, area, overall rating and excerpt.
-- **Filters and search:** filter by Birmingham area (City Centre, Digbeth, Jewellery Quarter, Harborne, Moseley, Stirchley, Kings Heath, Aston, Edgbaston, Bournville), category and amenities. Keyword search, and sort by newest, top pint or most liked.
-- **Review detail page:** ratings for pint quality, atmosphere and value, an overall score, price point (£ / ££ / £££) and amenity badges (cask ale, cobs/food, beer garden, dog friendly, live sports).
-- **User accounts:** register, log in and log out using Django's auth system.
-- **Review CRUD:** logged-in users can create reviews and edit or delete **only their own**. Reviews can be saved as drafts.
-- **Comments:** logged-in users can comment on reviews and delete their own comments.
-- **Likes:** "raise a glass" to a review, and toggle it off again.
-- **Feedback messages:** success, warning and error messages after every action.
-- **Admin panel:** manage reviews, categories and comments, with filters and bulk comment approval.
-- **Seed data:** `populate_birmingham_pubs` loads sample Birmingham pubs, users and comments.
+- **470 Verified Birmingham Pubs (`birmingham_pubs.json`):** Paginated cards (12 per page) covering 32 Birmingham districts and 7 venue styles with verified addresses, postcodes, GPS coordinates, and real photography.
+- **Filters, search, and GPS sorting:** Filter by any of Birmingham's 32 districts, 7 venue categories, and 5 amenities (cask ale, cobs/grub, beer garden, dog friendly, live sports). Search by pub name, address, postcode, or beer on tap (`pint_ordered`), and sort by **Closest to Me & Best Rated (GPS)**, **Best Average Rating**, **Cheapest Pint Price (£)**, **Most Cheers**, or **Newest**.
+- **True Community Averages & "What's on Tap" Price Tracker:** Every pub page calculates live community averages across all reviews for Pint Quality, Atmosphere, Value, and Overall Score, plus average pint price (£), recent pints ordered, and a community photo gallery.
+- **Auto-Fill Review Form & Direct Photo Upload:** Clicking "Review This Pub" or selecting a pub from the 470-pub autocomplete datalist auto-fills its district, street address, postcode, category, price tier, and amenities. Users can upload a photo directly from their device (validated for size and image header bytes) with a live preview.
+- **My Pint Passport (`/passport/<username>/`):** Gamified user profile tracking **32 Birmingham District Stamps**, **9 Collectible Brummie Badges** with live progress bars, a **Want to Visit** wishlist (bookmarks), cheered pints, and private drafts.
+- **User accounts & permissions:** Register, log in, and log out using Django's auth system. Logged-in users can edit or delete **only their own** reviews and comments, while existing community activity (comments, likes, bookmarks) is preserved when a pub's review is created or removed.
+- **Feedback messages & custom error pages:** Bootstrap 5 toast notifications after every CRUD/auth action, plus branded `404.html` and `500.html` pages.
+- **Admin panel:** Manage reviews, categories, and comments with filters, search, pint price visibility, and bulk comment approval.
 
 ### Future features
 
-- User profile pages listing a user's reviews.
-- Interactive map of reviewed pubs.
-- Image uploads via Cloudinary.
+- Interactive embedded cluster map view of all 470 Birmingham pubs.
+- Cloud media storage integration (e.g., Cloudinary / S3) for persistent user-uploaded photos on ephemeral dynos.
 
 <!-- Add screenshots of each feature here once the site is deployed -->
 
@@ -152,24 +144,25 @@ User (Django auth)
  ├──< PubReview (author)
  │     ├── Category (FK, optional)
  │     ├──< Comment (review)
- │     └──<> User (likes, many-to-many)
+ │     ├──<> User (likes, many-to-many)
+ │     └──<> User (bookmarks, many-to-many)
  └──< Comment (author)
 ```
 
 | Model | Key fields |
 |---|---|
 | **Category** | name, slug, description |
-| **PubReview** | title, slug, pub_name, category, brum_area, author, price_point, amenity booleans, pint_quality / atmosphere / value ratings (1–5), content, excerpt, featured_image, status (Draft/Published), likes, created_on, updated_on |
-| **Comment** | review, author, body, approved, created_on |
+| **PubReview** | title, slug, pub_name, category, brum_area (32 choices), address, postcode, latitude, longitude, author, price_point, amenity booleans, pint_quality / atmosphere / value ratings (1–5), pint_ordered, pint_price (£), content, excerpt, uploaded_image, featured_image, status (Draft/Published), likes, bookmarks, created_on, updated_on |
+| **Comment** | review, author, pint_quality / atmosphere / value ratings (1–5), pint_ordered, pint_price (£), uploaded_image, body, approved, created_on |
 
 ---
 
 ## Technologies Used
 
-- **Languages:** Python, HTML, CSS, JavaScript
+- **Languages:** Python, HTML5, CSS3, JavaScript (ES6)
 - **Framework:** Django 4.2 / 5.x
 - **Front end:** Bootstrap 5.3, Font Awesome 6, Google Fonts (Fraunces, Plus Jakarta Sans)
-- **Database:** SQLite (local), PostgreSQL (production via `dj-database-url`)
+- **Database:** SQLite (local), PostgreSQL (production via `dj-database-url` & `psycopg2-binary`)
 - **Deployment:** Heroku, Gunicorn, WhiteNoise
 - **Tools:** Git, GitHub, GitHub Projects, VS Code
 
@@ -189,9 +182,9 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Set up the database and sample data
+# 4. Run migrations and load all 470 Birmingham pubs
 python manage.py migrate
-python manage.py populate_birmingham_pubs
+python manage.py loaddata birmingham_pubs.json
 python manage.py createsuperuser
 
 # 5. Run the server
@@ -207,7 +200,7 @@ Then open http://127.0.0.1:8000.
 The site is deployed to **Heroku**.
 
 1. Create a new Heroku app and attach a **Heroku Postgres** database.
-2. Add a `Procfile` to the repo root containing: `web: gunicorn second_city_pint.wsgi`
+2. The repo root includes a `Procfile` containing: `web: gunicorn second_city_pint.wsgi`
 3. Set these **config vars** in Heroku → Settings:
 
    | Key | Value |
@@ -215,13 +208,14 @@ The site is deployed to **Heroku**.
    | `DJANGO_SECRET_KEY` | a long random string (never commit this) |
    | `DJANGO_DEBUG` | `False` |
    | `DJANGO_ALLOWED_HOSTS` | `your-app-name.herokuapp.com` |
+   | `DJANGO_CSRF_TRUSTED_ORIGINS` | `https://your-app-name.herokuapp.com` |
    | `DATABASE_URL` | set automatically by Heroku Postgres |
 
 4. Connect the GitHub repo in the Heroku **Deploy** tab and deploy the `main` branch.
-5. Run the migrations and seed data:
+5. Run the migrations and load the 470 Birmingham pubs:
    ```bash
    heroku run python manage.py migrate
-   heroku run python manage.py populate_birmingham_pubs
+   heroku run python manage.py loaddata birmingham_pubs.json
    heroku run python manage.py createsuperuser
    ```
 
@@ -229,26 +223,39 @@ The site is deployed to **Heroku**.
 
 ## Testing
 
-<!-- Fill in during Thu/Fri of the sprint -->
+### Automated tests (`reviews/tests.py`)
+
+Run the automated test suite with:
+
+```bash
+python manage.py test
+```
+
+The suite covers:
+- **Activity Preservation:** Creating a review for a `pub_directory` pub transfers existing comments, likes, bookmarks, and GPS coordinates; deleting a review reverts the pub back to `pub_directory` without losing other users' comments, likes, or bookmarks.
+- **Security & Access Control:** Non-authors receive `403 Forbidden` when attempting to edit or delete another user's review; unpublished drafts return `404` on detail, like, bookmark, and comment endpoints; open-redirect payloads on bookmark `next` URLs are blocked.
+- **Upload & Price Validation:** Fake image uploads (e.g. HTML/script renamed to `.jpg`) and negative pint prices are rejected by server-side validation; valid PNG uploads and pint prices (`£1.00–£25.00`) are accepted.
+- **Pint Passport & Sorting:** `/passport/pub_directory/` returns `404`; `total_cheers_received` only counts likes on the user's own authored reviews; GPS proximity sorting (`sort=nearest`) and pint price sorting (`sort=cheapest_pint`) rank pubs accurately.
+- **Fixture Security:** Verifies `birmingham_pubs.json` contains no personal user accounts or crackable password hashes.
 
 ### Manual testing
 
 | Feature | Action | Expected result | Pass? |
 |---|---|---|---|
-| Homepage | Visit `/` | Published reviews are shown, newest first | |
-| Register | Submit valid form | Account created, logged in, welcome message | |
-| Login / Logout | Log in, then log out | Navbar updates, redirected to homepage | |
-| Create review | Submit form while logged in | Review posted, success message | |
-| Create review (logged out) | Visit `/review/new/` | Redirected to login | |
-| Edit review | Edit own review | Changes saved | |
-| Edit someone else's review | Visit their `/edit/` URL | Access denied | |
-| Delete review | Delete own review | Confirmation page, then removed | |
-| Comment | Post a comment | Comment appears with message | |
-| Delete comment | Delete own comment | Comment removed | |
-| Like | Click like, then click again | Count goes up, then back down | |
-| Filters / search / sort | Use each control | Results update correctly | |
-| Draft | Save as draft | Hidden from homepage and other users | |
-| Responsive | Check mobile, tablet, desktop | Layout adapts with no horizontal scroll | |
+| Homepage | Visit `/` | Published Birmingham pubs are shown with filters & GPS controls | Pass |
+| Register | Submit valid form | Account created, logged in, welcome toast shown | Pass |
+| Login / Logout | Log in, then log out | Navbar updates, redirected to homepage | Pass |
+| Create review | Submit form while logged in (with auto-fill) | Review posted, existing activity preserved, success toast | Pass |
+| Create review (logged out) | Visit `/review/new/` | Redirected to login | Pass |
+| Edit review | Edit own review | Changes saved | Pass |
+| Edit someone else's review | Visit their `/edit/` URL | 403 Access denied + error toast | Pass |
+| Delete review | Delete own review | Confirmation page, personal review removed, pub & others' activity preserved | Pass |
+| Comment & Rate | Post a community review with pint price & photo | Rating, pint price & photo appear; community average updates | Pass |
+| Delete comment | Delete own comment | Comment removed | Pass |
+| Like / Bookmark | Click Raise a Glass & Want to Visit | Counts toggle and update Pint Passport | Pass |
+| Filters / search / sort | Filter by area/category/amenities, search beer, sort by GPS/price | Results update accurately | Pass |
+| Draft | Save as draft | Hidden from homepage and other users; visible in author's Pint Passport | Pass |
+| Responsive | Check mobile, tablet, desktop | Layout adapts with no horizontal scroll | Pass |
 
 ### Validators
 
@@ -263,7 +270,9 @@ The site is deployed to **Heroku**.
 
 | Bug | Fix |
 |---|---|
-| | |
+| Posting or deleting a full review deleted the `pub_directory` listing and cascade-deleted other users' comments, likes, and bookmarks | Updated `ReviewCreateView.form_valid` to transfer comments/likes/bookmarks inside `transaction.atomic()` and `ReviewDeleteView.form_valid` to revert the pub to `pub_directory` |
+| Test user account included in `birmingham_pubs.json` | Stripped personal accounts from `birmingham_pubs.json` and locked `pub_directory` with an unusable password (`!`) + added regression test |
+| Unpublished drafts could be liked, bookmarked, or commented on via direct POST | Added `status=PubReview.Status.PUBLISHED` filter to `LikeReviewView`, `ToggleBookmarkView`, and `CommentCreateView` |
 
 ---
 
@@ -279,6 +288,7 @@ The site is deployed to **Heroku**.
 
 ## Credits
 
-- Default pub image from [Unsplash](https://unsplash.com/).
+- Verified Birmingham pub photography from [Wikimedia Commons](https://commons.wikimedia.org/) & [Geograph Britain and Ireland](https://www.geograph.org.uk/), with fallback pub interior imagery from [Unsplash](https://unsplash.com/).
+- Address, postcode, and GPS data from OpenStreetMap & UK Food Standards Agency (Birmingham City Council).
 - [Django documentation](https://docs.djangoproject.com/) and [Bootstrap documentation](https://getbootstrap.com/).
 - Icons from [Font Awesome](https://fontawesome.com/).
