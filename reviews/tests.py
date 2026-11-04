@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+from unittest import mock
 from decimal import Decimal
 from pathlib import Path
 from django.contrib.auth.models import User
@@ -18,6 +19,14 @@ VALID_PNG_BYTES = (
 )
 
 
+# client.login() doesn't pass a request, which django-axes needs, so tests that just
+# need a logged-in user use Django's plain backend. LoginRateLimitTests covers axes.
+PLAIN_LOGIN = override_settings(
+    AUTHENTICATION_BACKENDS=["django.contrib.auth.backends.ModelBackend"]
+)
+
+
+@PLAIN_LOGIN
 class ReviewActivityPreservationTests(TestCase):
     def setUp(self):
         self.directory_user = User.objects.create_user(
@@ -154,6 +163,7 @@ class ReviewActivityPreservationTests(TestCase):
         self.assertEqual(review.comments.count(), 1)
 
 
+@PLAIN_LOGIN
 class SecurityAndValidationTests(TestCase):
     def setUp(self):
         self.author = User.objects.create_user(
@@ -319,6 +329,7 @@ class SecurityAndValidationTests(TestCase):
         self.assertEqual(review.card_image_url, review.featured_image)
 
 
+@PLAIN_LOGIN
 class PintPassportAndSortingTests(TestCase):
     def setUp(self):
         self.dir_user = User.objects.create_user(username="pub_directory")
@@ -410,3 +421,41 @@ class FixtureSecurityTests(TestCase):
         self.assertEqual(len(user_entries), 1)
         self.assertEqual(user_entries[0]["fields"]["username"], "pub_directory")
         self.assertFalse(user_entries[0]["fields"]["password"].startswith("pbkdf2_"))
+
+
+class LoginRateLimitTests(TestCase):
+    def setUp(self):
+        User.objects.create_user(username="brum_user", password="StrongPassword123!")
+
+    def try_login(self, password, ip="203.0.113.7"):
+        return self.client.post(
+            reverse("login"),
+            {"username": "brum_user", "password": password},
+            REMOTE_ADDR=ip,
+        )
+
+    def test_five_wrong_passwords_lock_out_even_the_right_one(self):
+        for _ in range(5):
+            self.try_login("wrong-guess")
+        response = self.try_login("StrongPassword123!")
+        self.assertEqual(response.status_code, 429)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_lockout_is_per_address_so_others_can_still_log_in(self):
+        for _ in range(5):
+            self.try_login("wrong-guess", ip="203.0.113.7")
+        response = self.try_login("StrongPassword123!", ip="198.51.100.20")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("_auth_user_id", self.client.session)
+
+    def test_client_ip_uses_herokus_last_forwarded_address(self):
+        from django.test import RequestFactory
+        from second_city_pint import settings as project_settings
+
+        request = RequestFactory().get(
+            "/", HTTP_X_FORWARDED_FOR="6.6.6.6, 203.0.113.7", REMOTE_ADDR="10.0.0.1"
+        )
+        with mock.patch.object(project_settings, "ON_HEROKU", True):
+            self.assertEqual(project_settings.client_ip(request), "203.0.113.7")
+        with mock.patch.object(project_settings, "ON_HEROKU", False):
+            self.assertEqual(project_settings.client_ip(request), "10.0.0.1")

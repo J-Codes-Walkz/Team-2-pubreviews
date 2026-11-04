@@ -10,3 +10,11 @@ staticfiles/
 media/
 .env
 *.log
+.DS_Store
+
+# graphify (mind map): only the three shareable outputs are committed;
+# the cache, manifest and cost tracker stay local.
+graphify-out/*
+!graphify-out/graph.html
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md

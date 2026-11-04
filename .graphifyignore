@@ -1,0 +1,9 @@
+# Screenshots are test evidence, not project structure, so they are left
+# out of the knowledge graph (mind map).
+images/
+# The 470-pub fixture is seed data, not structure (and is large to read).
+reviews/fixtures/
+# Uploaded photos and local-only files.
+media/
+db.sqlite3
+.DS_Store
