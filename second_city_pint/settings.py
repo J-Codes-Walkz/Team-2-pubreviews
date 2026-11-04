@@ -1,15 +1,25 @@
 import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-brum-second-city-pint-dev-key-change-in-prod",
+DEV_SECRET_KEY = "django-insecure-brum-second-city-pint-dev-key-change-in-prod"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", DEV_SECRET_KEY)
+
+# Debug defaults to on locally but off on Heroku (which sets DYNO on every dyno),
+# so a missing config var can never put the live site into debug mode.
+ON_HEROKU = "DYNO" in os.environ
+DEBUG = os.environ.get("DJANGO_DEBUG", "False" if ON_HEROKU else "True").lower() in (
+    "true",
+    "1",
+    "yes",
 )
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+# Fail safe: never run the live site with the public development key.
+if not DEBUG and SECRET_KEY == DEV_SECRET_KEY:
+    raise ImproperlyConfigured("Set the DJANGO_SECRET_KEY config var before running with DEBUG off.")
 
 ALLOWED_HOSTS = [
     h.strip()
@@ -36,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "axes",
     # Local Apps
     "reviews.apps.ReviewsConfig",
 ]
@@ -48,6 +59,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Must be last: blocks logins that django-axes has locked out
+    "axes.middleware.AxesMiddleware",
 ]
 
 # Enable WhiteNoise if installed
@@ -107,12 +120,51 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Uploaded photos go to Cloudinary when CLOUDINARY_URL is set (Heroku, whose disk is
+# wiped on every restart), and to the local media/ folder otherwise.
+STORAGES = {
+    "default": {
+        "BACKEND": (
+            "cloudinary_storage.storage.MediaCloudinaryStorage"
+            if os.environ.get("CLOUDINARY_URL")
+            else "django.core.files.storage.FileSystemStorage"
+        )
+    },
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Authentication Redirects
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "reviews:index"
 LOGOUT_REDIRECT_URL = "reviews:index"
+
+# Login rate limiting (django-axes): 5 wrong passwords for one account from one
+# address locks that combination out for 1 hour. Covers the site login and /admin.
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
+AXES_RESET_ON_SUCCESS = True
+
+
+def client_ip(request):
+    """The visitor's real IP address.
+
+    Heroku's router appends the real address as the LAST X-Forwarded-For entry;
+    anything before it came from the browser and can be faked.
+    """
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if ON_HEROKU and forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+AXES_CLIENT_IP_CALLABLE = client_ip
 
 # Security Headers & Cookie Hardening
 SECURE_CONTENT_TYPE_NOSNIFF = True
