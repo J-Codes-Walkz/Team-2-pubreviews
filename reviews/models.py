@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import urlparse
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import (
@@ -367,7 +368,7 @@ class PubReview(models.Model):
     @property
     def card_image_url(self):
         url = self.image_url
-        if "images.unsplash.com/" in url:
+        if urlparse(url).hostname == "images.unsplash.com":
             return (
                 url.replace("w=1200&q=80", "w=500&q=75&fm=webp")
                 .replace("w=1600&q=80", "w=500&q=75&fm=webp")

@@ -414,7 +414,9 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def form_valid(self, form):
         review = self.get_object()
         pub_name = review.pub_name
-        has_community_activity = (
+        # Only published pubs are kept as directory listings: a deleted draft was
+        # never public, so it must be really deleted rather than published.
+        has_community_activity = review.status == PubReview.Status.PUBLISHED and (
             review.comments.exists()
             or review.likes.exists()
             or review.bookmarks.exists()

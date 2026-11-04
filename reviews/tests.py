@@ -1,10 +1,13 @@
 import json
+import os
+import tempfile
 from decimal import Decimal
 from pathlib import Path
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
+from .forms import validate_uploaded_image_file
 from .models import Category, PubReview, Comment
 
 
@@ -289,6 +292,31 @@ class SecurityAndValidationTests(TestCase):
             },
         )
         self.assertEqual(Comment.objects.count(), 0)
+
+    def test_deleting_draft_really_deletes_it_and_never_publishes_it(self):
+        # The live site always has the directory guide account (it's in the fixture)
+        User.objects.create_user(username="pub_directory")
+        self.client.login(username="alice_brum", password="StrongPassword123!")
+        self.client.post(reverse("reviews:delete", kwargs={"slug": self.draft_review.slug}))
+        self.assertFalse(PubReview.objects.filter(pk=self.draft_review.pk).exists())
+
+    def test_editing_review_whose_saved_photo_is_missing_does_not_crash(self):
+        with tempfile.TemporaryDirectory() as media_dir, override_settings(MEDIA_ROOT=media_dir):
+            self.published_review.uploaded_image = SimpleUploadedFile(
+                "pint.png", VALID_PNG_BYTES, content_type="image/png"
+            )
+            self.published_review.save()
+            # Simulate Heroku wiping uploaded files after a restart
+            os.remove(self.published_review.uploaded_image.path)
+            saved_file = PubReview.objects.get(pk=self.published_review.pk).uploaded_image
+            self.assertIs(validate_uploaded_image_file(saved_file), saved_file)
+
+    def test_card_thumbnail_only_rewrites_real_unsplash_urls(self):
+        review = self.published_review
+        review.featured_image = "https://images.unsplash.com/photo-1?w=1200&q=80"
+        self.assertIn("w=500", review.card_image_url)
+        review.featured_image = "https://evil.example/images.unsplash.com/x?w=1200&q=80"
+        self.assertEqual(review.card_image_url, review.featured_image)
 
 
 class PintPassportAndSortingTests(TestCase):

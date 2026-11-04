@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from .models import PubReview, Comment
 
 
@@ -12,6 +13,11 @@ MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 def validate_uploaded_image_file(uploaded_file):
     """Verify file size and actual binary magic bytes for uploaded images."""
     if not uploaded_file:
+        return uploaded_file
+
+    # Only check brand-new uploads. A previously saved photo comes back as a stored
+    # file, and reading it would crash the form if it's gone from disk (e.g. Heroku).
+    if not isinstance(uploaded_file, UploadedFile):
         return uploaded_file
 
     if getattr(uploaded_file, "size", 0) > MAX_UPLOAD_SIZE_BYTES:
