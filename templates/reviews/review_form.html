@@ -72,31 +72,31 @@
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Pub Name *</label>
+                                        <label for="id_pub_name" class="form-label fw-semibold">Pub Name *</label>
                                         {{ form.pub_name }}
                                         <div class="form-text">Start typing any of our 470 Birmingham pubs to auto-fill its details.</div>
                                         <div class="text-danger small">{{ form.pub_name.errors }}</div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Birmingham District *</label>
+                                        <label for="id_brum_area" class="form-label fw-semibold">Birmingham District *</label>
                                         {{ form.brum_area }}
                                     </div>
 
                                     <div class="col-md-8">
-                                        <label class="form-label fw-semibold">Street Address</label>
+                                        <label for="id_address" class="form-label fw-semibold">Street Address</label>
                                         {{ form.address }}
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label fw-semibold">Postcode</label>
+                                        <label for="id_postcode" class="form-label fw-semibold">Postcode</label>
                                         {{ form.postcode }}
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Pub Style / Category</label>
+                                        <label for="id_category" class="form-label fw-semibold">Pub Style / Category</label>
                                         {{ form.category }}
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">Price Point *</label>
+                                        <label for="id_price_point" class="form-label fw-semibold">Price Point *</label>
                                         {{ form.price_point }}
                                     </div>
                                 </div>
@@ -105,26 +105,26 @@
 
                         <!-- Star Ratings Row -->
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">🍺 Pint Quality *</label>
+                            <label for="id_pint_quality_rating" class="form-label fw-semibold">🍺 Pint Quality *</label>
                             {{ form.pint_quality_rating }}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">🔥 Atmosphere *</label>
+                            <label for="id_atmosphere_rating" class="form-label fw-semibold">🔥 Atmosphere *</label>
                             {{ form.atmosphere_rating }}
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">💷 Value Rating *</label>
+                            <label for="id_value_rating" class="form-label fw-semibold">💷 Value Rating *</label>
                             {{ form.value_rating }}
                         </div>
 
                         <!-- What's On Tap & Pint Price Tracker Row -->
                         <div class="col-md-8">
-                            <label class="form-label fw-semibold">🍺 What's on Tap / Pint Ordered (Optional)</label>
+                            <label for="id_pint_ordered" class="form-label fw-semibold">🍺 What's on Tap / Pint Ordered (Optional)</label>
                             {{ form.pint_ordered }}
                             <div class="form-text">e.g., Bathams Best Bitter, Attic Intuition Pale, Guinness</div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">💷 Price Paid (£) (Optional)</label>
+                            <label for="id_pint_price" class="form-label fw-semibold">💷 Price Paid (£) (Optional)</label>
                             <div class="input-group">
                                 <span class="input-group-text">£</span>
                                 {{ form.pint_price }}
@@ -133,13 +133,13 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label class="form-label fw-semibold">Review Headline *</label>
+                            <label for="id_title" class="form-label fw-semibold">Review Headline *</label>
                             {{ form.title }}
                             <div class="text-danger small">{{ form.title.errors }}</div>
                         </div>
 
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Your Review *</label>
+                            <label for="id_content" class="form-label fw-semibold">Your Review *</label>
                             {{ form.content }}
                             <div class="text-danger small">{{ form.content.errors }}</div>
                         </div>
@@ -149,7 +149,7 @@
                             <div class="p-3 p-md-4 rounded-3 border bg-light mt-1">
                                 <div class="row g-3 align-items-center">
                                     <div class="col-md-8">
-                                        <label class="form-label fw-bold mb-1">
+                                        <label for="id_uploaded_image" class="form-label fw-bold mb-1">
                                             <i class="fa-solid fa-camera text-warning me-1"></i>Upload a Picture of the Pub or Your Pint
                                         </label>
                                         <p class="text-muted small mb-2">
@@ -185,36 +185,36 @@
                                 <div class="d-flex flex-wrap gap-4">
                                     <div class="form-check">
                                         {{ form.serves_cask_ale }}
-                                        <label class="form-check-label">🍺 Real Cask Ale</label>
+                                        <label for="id_serves_cask_ale" class="form-check-label">🍺 Real Cask Ale</label>
                                     </div>
                                     <div class="form-check">
                                         {{ form.serves_cobs_or_food }}
-                                        <label class="form-check-label">🥪 Serves Cobs / Food</label>
+                                        <label for="id_serves_cobs_or_food" class="form-check-label">🥪 Serves Cobs / Food</label>
                                     </div>
                                     <div class="form-check">
                                         {{ form.has_beer_garden }}
-                                        <label class="form-check-label">☀️ Beer Garden</label>
+                                        <label for="id_has_beer_garden" class="form-check-label">☀️ Beer Garden</label>
                                     </div>
                                     <div class="form-check">
                                         {{ form.is_dog_friendly }}
-                                        <label class="form-check-label">🐕 Dog Friendly</label>
+                                        <label for="id_is_dog_friendly" class="form-check-label">🐕 Dog Friendly</label>
                                     </div>
                                     <div class="form-check">
                                         {{ form.shows_live_sports }}
-                                        <label class="form-check-label">📺 Shows Live Sports</label>
+                                        <label for="id_shows_live_sports" class="form-check-label">📺 Shows Live Sports</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="col-md-8">
-                            <label class="form-label fw-semibold">Short Card Summary (Optional)</label>
+                            <label for="id_excerpt" class="form-label fw-semibold">Short Card Summary (Optional)</label>
                             {{ form.excerpt }}
                             <div class="form-text">Leave blank to auto-generate from your review.</div>
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Publication Status</label>
+                            <label for="id_status" class="form-label fw-semibold">Publication Status</label>
                             {{ form.status }}
                         </div>
                     </div>
