@@ -1,27 +1,9 @@
 [
 {
   "model": "auth.user",
-  "pk": 5,
-  "fields": {
-    "password": "pbkdf2_sha256$600000$wVUiuUVL7arytkRp20FI0x$fJeauHNwKwB+Z617hU05pwN29tTgoVYKNzMkZ6wE0MY=",
-    "last_login": "2026-11-04T09:33:25.050Z",
-    "is_superuser": false,
-    "username": "paulybruv",
-    "first_name": "",
-    "last_name": "",
-    "email": "p@test.com",
-    "is_staff": false,
-    "is_active": true,
-    "date_joined": "2026-11-03T16:13:20.485Z",
-    "groups": [],
-    "user_permissions": []
-  }
-},
-{
-  "model": "auth.user",
   "pk": 6,
   "fields": {
-    "password": "",
+    "password": "!",
     "last_login": null,
     "is_superuser": false,
     "username": "pub_directory",
