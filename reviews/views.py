@@ -348,13 +348,9 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
             if form.instance.longitude is None and existing_pub.longitude is not None:
                 form.instance.longitude = existing_pub.longitude
             if (
-                not form.instance.uploaded_image
-                and (
-                    not form.instance.featured_image
-                    or form.instance.featured_image == PubReview.DEFAULT_IMAGE_URL
-                )
-                and existing_pub.featured_image
-            ):
+                not form.instance.featured_image
+                or form.instance.featured_image == PubReview.DEFAULT_IMAGE_URL
+            ) and existing_pub.featured_image:
                 form.instance.featured_image = existing_pub.featured_image
 
         # Find any unreviewed directory placeholder(s) for this same pub so we can
@@ -411,15 +407,75 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         review = self.get_object()
         return self.request.user == review.author
 
+    def handle_no_permission(self):
+        messages.error(self.request, "Hold on! You can only delete your own pub reviews.")
+        return super().handle_no_permission()
+
     def form_valid(self, form):
-        pub_name = self.get_object().pub_name
+        review = self.get_object()
+        pub_name = review.pub_name
+        # Only published pubs are kept as directory listings: a deleted draft was
+        # never public, so it must be really deleted rather than published.
+        has_community_activity = review.status == PubReview.Status.PUBLISHED and (
+            review.comments.exists()
+            or review.likes.exists()
+            or review.bookmarks.exists()
+            or User.objects.filter(username="pub_directory").exists()
+        )
+        if has_community_activity:
+            # Revert the pub back to an unreviewed Birmingham directory listing so
+            # other users' comments, likes, bookmarks, and the pub entry are preserved.
+            directory_user, created = User.objects.get_or_create(
+                username="pub_directory",
+                defaults={"email": "directory@secondcitypint.co.uk"},
+            )
+            if created:
+                directory_user.set_unusable_password()
+                directory_user.save()
+
+            area_label = review.get_brum_area_display()
+            base_title = f"{review.pub_name} — {area_label}"[:190]
+            candidate_title = base_title
+            counter = 2
+            while PubReview.objects.filter(title=candidate_title).exclude(pk=review.pk).exists():
+                candidate_title = f"{base_title} ({counter})"
+                counter += 1
+
+            cat_name = review.category.name if review.category else "Birmingham Pub"
+            loc_str = (
+                f" at {review.address}, {review.postcode}"
+                if review.address and review.postcode
+                else ""
+            )
+            review.author = directory_user
+            review.title = candidate_title
+            review.content = (
+                f"{review.pub_name} is a {cat_name.lower()} in {area_label}{loc_str}. "
+                f"Have you visited for a pint recently? Add your rating, pint price, and review below!"
+            )
+            review.excerpt = f"{cat_name} in {area_label}{loc_str}."[:220]
+            review.pint_ordered = ""
+            review.pint_price = None
+            if review.uploaded_image:
+                review.uploaded_image.delete(save=False)
+                review.uploaded_image = None
+            review.pint_quality_rating = 4
+            review.atmosphere_rating = 4
+            review.value_rating = 4
+            review.status = PubReview.Status.PUBLISHED
+            review.save()
+            messages.warning(self.request, f"Your review of {pub_name} has been deleted.")
+            return redirect(self.get_success_url())
+
         messages.warning(self.request, f"Your review of {pub_name} has been deleted.")
         return super().form_valid(form)
 
 
 class LikeReviewView(LoginRequiredMixin, View):
     def post(self, request, slug):
-        review = get_object_or_404(PubReview, slug=slug)
+        review = get_object_or_404(
+            PubReview, slug=slug, status=PubReview.Status.PUBLISHED
+        )
         if review.likes.filter(id=request.user.id).exists():
             review.likes.remove(request.user)
             messages.info(request, f"Removed your cheers from {review.pub_name}.")
@@ -431,7 +487,9 @@ class LikeReviewView(LoginRequiredMixin, View):
 
 class ToggleBookmarkView(LoginRequiredMixin, View):
     def post(self, request, slug):
-        review = get_object_or_404(PubReview, slug=slug)
+        review = get_object_or_404(
+            PubReview, slug=slug, status=PubReview.Status.PUBLISHED
+        )
         if review.bookmarks.filter(id=request.user.id).exists():
             review.bookmarks.remove(request.user)
             messages.info(
@@ -465,6 +523,9 @@ class PintPassportView(DetailView):
     context_object_name = "profile_user"
     slug_field = "username"
     slug_url_kwarg = "username"
+
+    def get_queryset(self):
+        return User.objects.exclude(username="pub_directory")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -513,8 +574,10 @@ class PintPassportView(DetailView):
             status=PubReview.Status.PUBLISHED,
         ).order_by("-created_on")
 
-        # Total cheers received on this user's published reviews
-        total_cheers_received = sum(r.like_count for r in published_reviews)
+        # Total cheers received on this user's own authored published reviews
+        total_cheers_received = sum(
+            r.like_count for r in published_reviews if r.author_id == profile_user.id
+        )
 
         # Average Pint Quality rating given by this reviewer across main reviews & community reviews
         pint_scores = list(
@@ -549,10 +612,6 @@ class PintPassportView(DetailView):
         has_cobs = (
             published_reviews.filter(serves_cobs_or_food=True).exists()
             or liked_reviews.filter(serves_cobs_or_food=True).exists()
-        )
-        has_garden = (
-            published_reviews.filter(has_beer_garden=True).exists()
-            or liked_reviews.filter(has_beer_garden=True).exists()
         )
         logged_pint_prices = (
             PubReview.objects.filter(author=profile_user, pint_price__isnull=False).count()
@@ -663,7 +722,9 @@ class PintPassportView(DetailView):
 
 class CommentCreateView(LoginRequiredMixin, View):
     def post(self, request, slug):
-        review = get_object_or_404(PubReview, slug=slug)
+        review = get_object_or_404(
+            PubReview, slug=slug, status=PubReview.Status.PUBLISHED
+        )
         form = CommentForm(request.POST, request.FILES)
         if form.is_valid():
             comment = form.save(commit=False)
@@ -686,6 +747,10 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         comment = self.get_comment()
         return self.request.user == comment.author or self.request.user.is_staff
+
+    def handle_no_permission(self):
+        messages.error(self.request, "Hold on! You can only delete your own comments.")
+        return super().handle_no_permission()
 
     def post(self, request, pk):
         comment = self.get_comment()

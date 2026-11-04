@@ -4,20 +4,20 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-banner py-5">
-    <div class="container py-3">
+<section class="hero-banner py-4 py-md-5">
+    <div class="container py-2 py-md-3">
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <span class="badge bg-warning text-dark fw-bold mb-3 px-3 py-2 text-uppercase">
-                    <i class="fa-solid fa-location-dot me-1"></i>Birmingham, UK Community Guide
+                    <i class="fa-solid fa-location-dot me-1" aria-hidden="true"></i>Birmingham, UK Community Guide
                 </span>
                 <h1 class="display-5 fw-bold mb-3">Honest Reviews of Brum's Finest Pints, Cobs &amp; Snugs</h1>
-                <p class="lead text-light opacity-90 mb-4">
+                <p class="lead text-light mb-4">
                     From Grade II* tiled Victorian palaces in Aston to hazy craft taprooms on the Stirchley Beer Mile. Rated by locals who care about how the ale is kept.
                 </p>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="{% url 'reviews:create' %}" class="btn btn-amber btn-lg px-4">
-                        <i class="fa-solid fa-pen-to-square me-2"></i>Log a Pint Review
+                        <i class="fa-solid fa-pen-to-square me-2" aria-hidden="true"></i>Log a Pint Review
                     </a>
                     <a href="#filter-bar" class="btn btn-outline-light btn-lg px-4">
                         Filter by Area &amp; Amenities
@@ -29,15 +29,15 @@
 </section>
 
 <!-- Dynamic Filter Controls -->
-<section id="filter-bar" class="container mt-n4 position-relative" style="margin-top: -28px; z-index: 10;">
-    <form method="get" id="pub-filter-form" class="card shadow-sm border-0 p-4 rounded-4" style="border: 1px solid var(--pub-border) !important;">
+<section id="filter-bar" class="container position-relative" style="margin-top: -28px; z-index: 10;" aria-label="Filter and sort Birmingham pubs">
+    <form method="get" id="pub-filter-form" class="card shadow-sm border-0 p-3 p-md-4 rounded-4" style="border: 1px solid var(--pub-border) !important;">
         <input type="hidden" name="lat" id="gps-lat" value="{{ user_lat }}">
         <input type="hidden" name="lng" id="gps-lng" value="{{ user_lng }}">
 
         <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label fw-semibold small text-uppercase text-muted">Birmingham District</label>
-                <select name="area" class="form-select" onchange="this.form.submit()">
+            <div class="col-sm-6 col-md-3">
+                <label for="filter-area" class="form-label fw-semibold small text-uppercase text-muted">Birmingham District</label>
+                <select id="filter-area" name="area" class="form-select" onchange="this.form.submit()">
                     <option value="">All Brum Areas</option>
                     {% for code, label in brum_areas %}
                         <option value="{{ code }}" {% if selected_area == code %}selected{% endif %}>{{ label }}</option>
@@ -45,9 +45,9 @@
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label fw-semibold small text-uppercase text-muted">Pub Style</label>
-                <select name="category" class="form-select" onchange="this.form.submit()">
+            <div class="col-sm-6 col-md-3">
+                <label for="filter-category" class="form-label fw-semibold small text-uppercase text-muted">Pub Style</label>
+                <select id="filter-category" name="category" class="form-select" onchange="this.form.submit()">
                     <option value="">All Styles</option>
                     {% for cat in categories %}
                         <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
@@ -55,14 +55,14 @@
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label fw-semibold small text-uppercase text-muted">Search Pub or Ale</label>
-                <input type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="e.g. Craven Arms, Bathams...">
+            <div class="col-sm-6 col-md-3">
+                <label for="filter-q" class="form-label fw-semibold small text-uppercase text-muted">Search Pub or Ale</label>
+                <input id="filter-q" type="text" name="q" value="{{ search_query }}" class="form-control" placeholder="e.g. Craven Arms, Bathams...">
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label fw-semibold small text-uppercase text-muted">Sort By</label>
-                <select name="sort" class="form-select" onchange="this.form.submit()">
+            <div class="col-sm-6 col-md-3">
+                <label for="filter-sort" class="form-label fw-semibold small text-uppercase text-muted">Sort By</label>
+                <select id="filter-sort" name="sort" class="form-select" onchange="this.form.submit()">
                     <option value="nearest" {% if selected_sort == 'nearest' %}selected{% endif %}>📍 Closest to Me &amp; Best Rated</option>
                     <option value="top_pint" {% if selected_sort == 'top_pint' %}selected{% endif %}>⭐ Best Average Rating</option>
                     <option value="cheapest_pint" {% if selected_sort == 'cheapest_pint' %}selected{% endif %}>💷 Cheapest Pint Price (£)</option>
@@ -106,19 +106,19 @@
             <div class="d-flex flex-wrap align-items-center gap-2">
                 {% if has_gps %}
                     <button type="button" id="btn-locate-me" class="btn btn-success btn-sm px-3" onclick="requestUserGPS(true)" title="Refresh your GPS coordinates">
-                        <i class="fa-solid fa-location-crosshairs me-1"></i>GPS Active
+                        <i class="fa-solid fa-location-crosshairs me-1" aria-hidden="true"></i>GPS Active
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="clearUserGPS()" title="Turn off GPS sorting">
-                        <i class="fa-solid fa-xmark"></i>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="clearUserGPS()" title="Turn off GPS sorting" aria-label="Turn off GPS sorting">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                     </button>
                 {% else %}
                     <button type="button" id="btn-locate-me" class="btn btn-outline-success btn-sm px-3" onclick="requestUserGPS(true)">
-                        <i class="fa-solid fa-location-crosshairs me-1"></i>Near Me (GPS)
+                        <i class="fa-solid fa-location-crosshairs me-1" aria-hidden="true"></i>Near Me (GPS)
                     </button>
                 {% endif %}
                 <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary btn-sm px-3" onclick="sessionStorage.removeItem('scp_gps_lat'); sessionStorage.removeItem('scp_gps_lng');">Reset</a>
                 <button type="submit" class="btn btn-amber btn-sm px-4">
-                    <i class="fa-solid fa-filter me-1"></i>Apply Filters
+                    <i class="fa-solid fa-filter me-1" aria-hidden="true"></i>Apply Filters
                 </button>
             </div>
         </div>
@@ -131,16 +131,16 @@
         <div>
             <h2 class="h3 mb-0">
                 {% if has_gps and selected_sort == 'nearest' %}
-                    <i class="fa-solid fa-location-dot text-success me-2"></i>Pubs Closest to You
+                    <i class="fa-solid fa-location-dot text-success me-2" aria-hidden="true"></i>Pubs Closest to You
                 {% elif selected_sort == 'top_pint' %}
-                    <i class="fa-solid fa-ranking-star text-warning me-2"></i>Highest Rated Birmingham Pubs
+                    <i class="fa-solid fa-ranking-star text-warning me-2" aria-hidden="true"></i>Highest Rated Birmingham Pubs
                 {% else %}
                     Latest Second City Dispatches
                 {% endif %}
             </h2>
             {% if has_gps %}
                 <span class="text-success small fw-medium">
-                    <i class="fa-solid fa-satellite-dish me-1"></i>Ordered by distance from your GPS location &amp; best average rating
+                    <i class="fa-solid fa-satellite-dish me-1" aria-hidden="true"></i>Ordered by distance from your GPS location &amp; best average rating
                 </span>
             {% endif %}
         </div>
@@ -152,15 +152,24 @@
         <div class="col-md-6 col-lg-4">
             <article class="pub-card position-relative h-100 d-flex flex-column">
                 <div class="position-relative">
-                    <a href="{{ review.get_absolute_url }}">
-                        <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img" loading="lazy" onerror="this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';">
+                    <a href="{{ review.get_absolute_url }}" aria-label="View {{ review.pub_name }} in {{ review.get_brum_area_display }}">
+                        <img
+                            src="{{ review.card_image_url }}"
+                            data-orig="{{ review.image_url }}"
+                            alt="{{ review.pub_name }} in {{ review.get_brum_area_display }}"
+                            class="pub-card-img"
+                            width="400"
+                            height="215"
+                            {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy" decoding="async"{% endif %}
+                            onerror="if(this.dataset.orig && this.src!==this.dataset.orig){this.src=this.dataset.orig;}else{this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';}"
+                        >
                     </a>
-                    <!-- Birmingham Area Pill Badge -->
-                    <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2 shadow-sm">
-                        <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
+                    <!-- Birmingham Area Pill Badge (Truncated cleanly so it never collides with price badge) -->
+                    <span class="badge rounded-pill badge-area text-truncate position-absolute top-0 start-0 m-3 px-3 py-2 shadow-sm" title="{{ review.get_brum_area_display }}">
+                        <i class="fa-solid fa-map-pin me-1 text-warning" aria-hidden="true"></i>{{ review.get_brum_area_display }}
                     </span>
                     <!-- Price Point / Avg Pint Price Pill -->
-                    <span class="badge rounded-pill bg-dark bg-opacity-75 text-warning position-absolute top-0 end-0 m-3 px-2 py-1">
+                    <span class="badge rounded-pill bg-dark bg-opacity-75 text-warning position-absolute top-0 end-0 m-3 px-2.5 py-1">
                         {% if review.avg_pint_price %}
                             🍺 £{{ review.avg_pint_price|floatformat:2 }}
                         {% else %}
@@ -170,7 +179,7 @@
                     {% if review.distance_miles is not None %}
                     <!-- GPS Distance Badge -->
                     <span class="badge rounded-pill bg-success text-white position-absolute bottom-0 start-0 m-3 px-3 py-1 shadow-sm">
-                        <i class="fa-solid fa-location-arrow me-1"></i>{{ review.distance_miles }} mi away
+                        <i class="fa-solid fa-location-arrow me-1" aria-hidden="true"></i>{{ review.distance_miles }} mi away
                     </span>
                     {% endif %}
                 </div>
@@ -181,21 +190,21 @@
                         <div>
                             <span class="text-uppercase fw-bold small text-success d-block">{{ review.pub_name }}</span>
                             {% if review.address or review.postcode %}
-                            <span class="text-muted d-block" style="font-size: 0.75rem;">
-                                <i class="fa-solid fa-location-dot me-1"></i>{{ review.address }}{% if review.address and review.postcode %}, {% endif %}{{ review.postcode }}
+                            <span class="text-muted d-block" style="font-size: 0.78rem;">
+                                <i class="fa-solid fa-location-dot me-1" aria-hidden="true"></i>{{ review.address }}{% if review.address and review.postcode %}, {% endif %}{{ review.postcode }}
                             </span>
                             {% endif %}
                         </div>
                         <div class="small text-nowrap ms-2 text-end">
                             {% if not review.has_community_reviews %}
-                                <span class="badge bg-light text-secondary border">No reviews yet</span>
+                                <span class="badge bg-light text-dark border">No reviews yet</span>
                             {% else %}
-                                <div>
+                                <div aria-label="Rated {{ review.overall_rating }} out of 5 stars">
                                     {% for i in "12345" %}
                                         {% if forloop.counter <= review.overall_rating %}
-                                            <i class="fa-solid fa-star star-filled"></i>
+                                            <i class="fa-solid fa-star star-filled" aria-hidden="true"></i>
                                         {% else %}
-                                            <i class="fa-regular fa-star star-empty"></i>
+                                            <i class="fa-regular fa-star star-empty" aria-hidden="true"></i>
                                         {% endif %}
                                     {% endfor %}
                                 </div>
@@ -235,16 +244,16 @@
                     <div class="pt-3 border-top d-flex justify-content-between align-items-center small text-muted">
                         <span class="position-relative" style="z-index: 2;">
                             {% if review.author.username == 'pub_directory' %}
-                                <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-dark btn-sm py-0 px-2 fw-semibold" style="font-size: 0.78rem;">
-                                    <i class="fa-solid fa-pen-to-square text-warning me-1"></i>Review This Pub
+                                <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-dark btn-sm py-1 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                    <i class="fa-solid fa-pen-to-square text-warning me-1" aria-hidden="true"></i>Review This Pub
                                 </a>
                             {% else %}
-                                <i class="fa-regular fa-user me-1"></i><a href="{% url 'reviews:passport' review.author.username %}" class="text-decoration-none text-muted fw-semibold">{{ review.author.username }}</a> &bull; {{ review.created_on|date:"d M Y" }}
+                                <i class="fa-regular fa-user me-1" aria-hidden="true"></i><a href="{% url 'reviews:passport' review.author.username %}" class="text-decoration-none text-muted fw-semibold">{{ review.author.username }}</a> &bull; {{ review.created_on|date:"d M Y" }}
                             {% endif %}
                         </span>
                         <span class="fw-semibold text-dark">
-                            <i class="fa-solid fa-heart text-danger me-1"></i>{{ review.like_count|default:review.total_likes }}
-                            <i class="fa-regular fa-comment ms-2 me-1"></i>{{ review.comment_count|default:review.comments.count }}
+                            <i class="fa-solid fa-heart text-danger me-1" aria-hidden="true"></i>{{ review.like_count|default:review.total_likes }}
+                            <i class="fa-regular fa-comment ms-2 me-1" aria-hidden="true"></i>{{ review.comment_count|default:review.comments.count }}
                         </span>
                     </div>
                 </div>
@@ -253,7 +262,7 @@
         {% empty %}
         <div class="col-12">
             <div class="text-center py-5 bg-white rounded-4 border p-4">
-                <i class="fa-solid fa-beer-mug-empty fa-3x text-warning mb-3"></i>
+                <i class="fa-solid fa-beer-mug-empty fa-3x text-warning mb-3" aria-hidden="true"></i>
                 <h3 class="h4">No Birmingham pubs matched those exact filters</h3>
                 <p class="text-muted mb-3">Try clearing a filter or be the first to review a local in that district!</p>
                 <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary me-2">Clear Filters</a>
@@ -325,7 +334,7 @@
         const btn = document.getElementById('btn-locate-me');
         if (btn && isManual) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Locating...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1" aria-hidden="true"></i>Locating...';
         }
         navigator.geolocation.getCurrentPosition(
             function (position) {
@@ -334,7 +343,7 @@
             function (err) {
                 if (btn && isManual) {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs me-1"></i>Near Me (GPS)';
+                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs me-1" aria-hidden="true"></i>Near Me (GPS)';
                     alert('Unable to access your GPS location. Please allow location access in your browser.');
                 } else {
                     sessionStorage.setItem('scp_gps_disabled', '1');
@@ -363,13 +372,13 @@
         const selectedSort = "{{ selected_sort }}";
         const gpsDisabled = sessionStorage.getItem('scp_gps_disabled') === '1';
 
+        // Re-apply saved GPS coordinates from sessionStorage if the user already enabled GPS,
+        // without triggering a browser geolocation permission prompt on initial page load.
         if (!hasGpsInUrl && selectedSort === 'nearest' && !gpsDisabled) {
             const savedLat = sessionStorage.getItem('scp_gps_lat');
             const savedLng = sessionStorage.getItem('scp_gps_lng');
             if (savedLat && savedLng) {
                 applyGPSCoordinates(savedLat, savedLng);
-            } else {
-                requestUserGPS(false);
             }
         }
     });

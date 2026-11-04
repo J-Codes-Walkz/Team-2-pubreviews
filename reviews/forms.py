@@ -1,7 +1,47 @@
+from decimal import Decimal
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from .models import PubReview, Comment
+
+
+MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+def validate_uploaded_image_file(uploaded_file):
+    """Verify file size and actual binary magic bytes for uploaded images."""
+    if not uploaded_file:
+        return uploaded_file
+
+    # Only check brand-new uploads. A previously saved photo comes back as a stored
+    # file, and reading it would crash the form if it's gone from disk (e.g. Heroku).
+    if not isinstance(uploaded_file, UploadedFile):
+        return uploaded_file
+
+    if getattr(uploaded_file, "size", 0) > MAX_UPLOAD_SIZE_BYTES:
+        raise ValidationError("Image file size must be under 5 MB.")
+
+    # Only inspect magic bytes when a new file is being uploaded
+    if hasattr(uploaded_file, "read") and hasattr(uploaded_file, "seek"):
+        try:
+            pos = uploaded_file.tell() if hasattr(uploaded_file, "tell") else 0
+            header = uploaded_file.read(16)
+            uploaded_file.seek(pos)
+        except Exception:
+            header = b""
+
+        if header:
+            is_jpeg = header.startswith(b"\xff\xd8\xff")
+            is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
+            is_gif = header.startswith((b"GIF87a", b"GIF89a"))
+            is_webp = len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+            if not (is_jpeg or is_png or is_gif or is_webp):
+                raise ValidationError(
+                    "Uploaded file is not a valid image (must be JPEG, PNG, WEBP, or GIF)."
+                )
+    return uploaded_file
 
 
 class PubReviewForm(forms.ModelForm):
@@ -90,7 +130,7 @@ class PubReviewForm(forms.ModelForm):
                     "class": "form-control",
                     "step": "0.05",
                     "min": "1.00",
-                    "max": "20.00",
+                    "max": "25.00",
                     "placeholder": "e.g., 4.50",
                 }
             ),
@@ -127,6 +167,21 @@ class PubReviewForm(forms.ModelForm):
             "is_dog_friendly": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "shows_live_sports": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
+
+    def clean_uploaded_image(self):
+        return validate_uploaded_image_file(self.cleaned_data.get("uploaded_image"))
+
+    def clean_pint_price(self):
+        price = self.cleaned_data.get("pint_price")
+        if price is not None and (price < Decimal("1.00") or price > Decimal("25.00")):
+            raise ValidationError("Pint price must be between £1.00 and £25.00.")
+        return price
+
+    def clean_featured_image(self):
+        url = (self.cleaned_data.get("featured_image") or "").strip()
+        if url and not url.lower().startswith(("http://", "https://")):
+            raise ValidationError("Image URL must start with http:// or https://.")
+        return url
 
 
 class CommentForm(forms.ModelForm):
@@ -183,7 +238,7 @@ class CommentForm(forms.ModelForm):
                     "class": "form-control form-control-sm",
                     "step": "0.05",
                     "min": "1.00",
-                    "max": "20.00",
+                    "max": "25.00",
                     "placeholder": "e.g., 4.50",
                 }
             ),
@@ -201,6 +256,15 @@ class CommentForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean_uploaded_image(self):
+        return validate_uploaded_image_file(self.cleaned_data.get("uploaded_image"))
+
+    def clean_pint_price(self):
+        price = self.cleaned_data.get("pint_price")
+        if price is not None and (price < Decimal("1.00") or price > Decimal("25.00")):
+            raise ValidationError("Pint price must be between £1.00 and £25.00.")
+        return price
 
 
 class BrummieRegisterForm(UserCreationForm):

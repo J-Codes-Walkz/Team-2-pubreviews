@@ -1,9 +1,12 @@
+from decimal import Decimal
+from urllib.parse import urlparse
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import (
     MinValueValidator,
     MaxValueValidator,
     FileExtensionValidator,
+    URLValidator,
 )
 from django.urls import reverse
 from django.utils.text import slugify
@@ -149,6 +152,10 @@ class PubReview(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        validators=[
+            MinValueValidator(Decimal("1.00")),
+            MaxValueValidator(Decimal("25.00")),
+        ],
         help_text="Price paid for a pint in £ (e.g., 4.50)",
     )
 
@@ -162,6 +169,7 @@ class PubReview(models.Model):
         max_length=500,
         blank=True,
         default=DEFAULT_IMAGE_URL,
+        validators=[URLValidator(schemes=["http", "https"])],
         help_text="Direct URL to a photo of the pub or pint (leave blank for default pub image).",
     )
     uploaded_image = models.FileField(
@@ -355,18 +363,24 @@ class PubReview(models.Model):
 
     @property
     def image_url(self):
-        if self.uploaded_image:
-            try:
-                return self.uploaded_image.url
-            except ValueError:
-                pass
-        for c in self._get_approved_comments():
-            if c.uploaded_image:
-                try:
-                    return c.uploaded_image.url
-                except ValueError:
-                    pass
         return self.featured_image or self.DEFAULT_IMAGE_URL
+
+    @property
+    def card_image_url(self):
+        url = self.image_url
+        if urlparse(url).hostname == "images.unsplash.com":
+            return (
+                url.replace("w=1200&q=80", "w=500&q=75&fm=webp")
+                .replace("w=1600&q=80", "w=500&q=75&fm=webp")
+            )
+        prefix = "https://upload.wikimedia.org/wikipedia/commons/"
+        if url.startswith(prefix) and "/thumb/" not in url:
+            rest = url[len(prefix):]
+            parts = rest.split("/")
+            if len(parts) == 3 and parts[2].lower().endswith((".jpg", ".jpeg", ".png")):
+                filename = parts[2]
+                return f"{prefix}thumb/{rest}/500px-{filename}"
+        return url
 
     def get_absolute_url(self):
         return reverse("reviews:detail", kwargs={"slug": self.slug})
@@ -409,6 +423,10 @@ class Comment(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        validators=[
+            MinValueValidator(Decimal("1.00")),
+            MaxValueValidator(Decimal("25.00")),
+        ],
     )
     uploaded_image = models.FileField(
         "Upload a Photo (Optional)",
