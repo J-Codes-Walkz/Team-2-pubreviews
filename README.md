@@ -206,9 +206,10 @@ python manage.py createsuperuser
 
 Choose a username, an optional email and a strong password when prompted. The password is not shown as you type.
 
-- Each developer creates their own superuser on their own local database. Accounts are never added to `birmingham_pubs.json`, and an automated test checks for this.
-- The live site has its own superuser, created once with `heroku run python manage.py createsuperuser`.
-- Admin logins are kept in the team's password manager, never in the repo, issues or chat.
+- The team shares **one superuser**. To use the admin locally, create it on your own database with the shared username; each local database is separate, so this is a one-time step per machine.
+- The live site has its own copy of the shared superuser, created once with `heroku run python manage.py createsuperuser`, and its own password.
+- Accounts are never added to `birmingham_pubs.json`; an automated test checks for this.
+- The shared admin login is kept in the team's password manager, never in the repo, issues or chat.
 - The admin login is rate-limited in the same way as the site login (see [Security](#security)).
 
 ---
@@ -238,7 +239,7 @@ The site runs on **Heroku** (EU region) with a Basic web dyno and a Heroku Postg
 
    `DJANGO_CSRF_TRUSTED_ORIGINS` is optional; it defaults to `https://` plus each allowed host.
 
-4. Deploy the `main` branch: `git push heroku main`, or connect the GitHub repo in the Heroku **Deploy** tab. The release step runs the migrations.
+4. Connect the GitHub repo in the Heroku **Deploy** tab and turn on **Automatic deploys** from `main` with **Wait for CI to pass** ticked. (The first deploy can also be done by hand with `git push heroku main`.) The release step runs the migrations.
 5. Load the 470 Birmingham pubs and create the admin account (one time only):
    ```bash
    heroku run python manage.py loaddata birmingham_pubs.json
@@ -246,6 +247,8 @@ The site runs on **Heroku** (EU region) with a Basic web dyno and a Heroku Postg
    ```
 
 **Fail-safes:** on Heroku, debug mode defaults to **off** even if `DJANGO_DEBUG` is missing, and the site refuses to start without a real `DJANGO_SECRET_KEY`. That way a missed config var can't put the live site into debug mode or leave it with the public development key.
+
+**How a change goes live:** open a pull request → GitHub runs the [Tests workflow](#continuous-integration) and CodeQL → a teammate reviews and approves (`main` is protected and needs one approval) → merge → the checks run again on `main` → Heroku deploys automatically once they pass, and the release step applies any new migrations.
 
 ---
 
@@ -287,6 +290,20 @@ python manage.py test
 The tests that only need a logged-in user use Django's plain login backend, because the test shortcut `client.login()` doesn't pass the request that django-axes needs. The rate-limit tests log in through the real login page with axes switched on.
 
 The tests for the draft, missing-photo and Unsplash fixes in the Bugs table below were run against the old code first, to confirm they fail there and pass with the fix.
+
+### Continuous integration
+
+[`.github/workflows/tests.yml`](.github/workflows/tests.yml) runs on every pull request and every push to `main`, using the same Python version as Heroku (from `.python-version`):
+
+| Step | What it catches |
+|---|---|
+| `manage.py check` | broken settings, URLs or models |
+| `makemigrations --check` | a model change without its migration |
+| `migrate` + `loaddata birmingham_pubs` on a fresh database | a fixture that won't load, like the leftover-account bug in the Bugs table |
+| `manage.py test` | any of the automated tests failing |
+| `check --deploy` with Heroku-like settings | a production security setting being switched off |
+
+GitHub CodeQL also scans every pull request and push to `main` for security issues. Heroku's automatic deploy waits for these checks to pass, so a failing test stops a broken version going live.
 
 ### Manual testing
 
