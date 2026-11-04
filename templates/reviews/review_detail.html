@@ -13,20 +13,20 @@
         {% if user == review.author %}
         <div class="d-flex gap-2">
             <a href="{% url 'reviews:edit' review.slug %}" class="btn btn-warning btn-sm fw-semibold">
-                <i class="fa-solid fa-pen me-1"></i>Edit Review
+                <i class="fa-solid fa-pen me-1"></i>Edit Main Listing
             </a>
             <a href="{% url 'reviews:delete' review.slug %}" class="btn btn-danger btn-sm fw-semibold">
-                <i class="fa-solid fa-trash me-1"></i>Delete Review
+                <i class="fa-solid fa-trash me-1"></i>Delete
             </a>
         </div>
         {% endif %}
     </div>
 
     <div class="row g-4">
-        <!-- Left Column: Narrative & Comments -->
+        <!-- Left Column: Narrative, Photo Gallery & Community Reviews -->
         <div class="col-lg-8">
             <article class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="w-100" style="max-height: 420px; object-fit: cover;">
+                <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="w-100" style="max-height: 420px; object-fit: cover;" onerror="this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';">
 
                 <div class="card-body p-4 p-md-5">
                     <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
@@ -41,30 +41,83 @@
                         <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2">
                             {{ review.get_price_point_display }}
                         </span>
+                        {% if review.avg_pint_price %}
+                        <span class="badge rounded-pill bg-success text-white px-3 py-2">
+                            🍺 Avg Pint: £{{ review.avg_pint_price|floatformat:2 }}
+                        </span>
+                        {% endif %}
                         {% if review.status == 0 %}
                         <span class="badge bg-danger">DRAFT</span>
                         {% endif %}
                     </div>
 
                     <h2 class="h4 text-success fw-bold text-uppercase mb-1">{{ review.pub_name }}</h2>
+                    {% if review.address or review.postcode %}
+                    <p class="text-muted small mb-2">
+                        <i class="fa-solid fa-location-dot text-warning me-1"></i>
+                        {{ review.address }}{% if review.address and review.postcode %}, {% endif %}{{ review.postcode }}
+                        {% if review.latitude and review.longitude %}
+                        &bull; <a href="https://www.openstreetmap.org/?mlat={{ review.latitude }}&mlon={{ review.longitude }}#map=17/{{ review.latitude }}/{{ review.longitude }}" target="_blank" rel="noopener" class="text-success fw-semibold text-decoration-none">View on Map &nearr;</a>
+                        {% endif %}
+                    </p>
+                    {% endif %}
                     <h1 class="display-6 fw-bold mb-3">{{ review.title }}</h1>
 
-                    <div class="d-flex align-items-center text-muted small mb-4 pb-3 border-bottom">
-                        <span>By <strong class="text-dark">{{ review.author.username }}</strong></span>
-                        <span class="mx-2">&bull;</span>
-                        <span>Reviewed on {{ review.created_on|date:"j F Y" }}</span>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between text-muted small mb-4 pb-3 border-bottom gap-2">
+                        <div>
+                            {% if review.author.username == 'pub_directory' %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2.5 py-1">
+                                    <i class="fa-solid fa-book-open me-1"></i>Birmingham Pub Guide Overview
+                                </span>
+                            {% else %}
+                                <span>First reviewed by <a href="{% url 'reviews:passport' review.author.username %}" class="text-dark fw-bold text-decoration-none"><i class="fa-solid fa-passport text-warning me-1"></i>{{ review.author.username }}</a></span>
+                                <span class="mx-2">&bull;</span>
+                                <span>{{ review.created_on|date:"j F Y" }}</span>
+                                {% if review.pint_ordered %}
+                                <span class="badge bg-warning bg-opacity-25 text-dark border border-warning ms-2">
+                                    🍺 {{ review.pint_ordered }}{% if review.pint_price %} (£{{ review.pint_price|floatformat:2 }}){% endif %}
+                                </span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <a href="#add-community-review" class="btn btn-amber btn-sm">
+                            <i class="fa-solid fa-star me-1"></i>Add Your Rating &amp; Photo
+                        </a>
                     </div>
 
                     <!-- Rich Narrative Review Content -->
                     <div class="fs-5 lh-lg mb-4" style="white-space: pre-line;">{{ review.content }}</div>
 
-                    <!-- Interactive Like Counter Bar -->
-                    <div id="engagement-bar" class="d-flex flex-wrap justify-content-between align-items-center p-3 rounded-3 bg-light border">
-                        <div>
-                            <span class="fw-bold me-2">Agree with this verdict?</span>
-                            <span class="text-muted small">{{ review.total_likes }} Brummie(s) raised a glass to this review.</span>
+                    <!-- Community Pint & Pub Photo Gallery -->
+                    {% if review.gallery_photos %}
+                    <div class="mb-4 pt-3 border-top">
+                        <h3 class="h6 text-uppercase fw-bold text-muted mb-3">
+                            <i class="fa-solid fa-images text-warning me-1"></i>Community Pint &amp; Pub Photos ({{ review.gallery_photos|length }})
+                        </h3>
+                        <div class="row g-2">
+                            {% for photo in review.gallery_photos %}
+                            <div class="col-6 col-md-4">
+                                <a href="{{ photo.url }}" target="_blank" class="d-block text-decoration-none">
+                                    <div class="border rounded-3 overflow-hidden bg-light shadow-sm">
+                                        <img src="{{ photo.url }}" alt="{{ photo.caption }}" class="w-100" style="height: 130px; object-fit: cover;">
+                                        <div class="p-2 small text-truncate text-dark bg-white">
+                                            <strong>@{{ photo.author }}</strong>: {{ photo.caption }}
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
                         </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Interactive Like & Pint Passport Bookmark Bar -->
+                    <div id="engagement-bar" class="d-flex flex-wrap justify-content-between align-items-center gap-3 p-3 rounded-3 bg-light border">
                         <div>
+                            <span class="fw-bold me-2">Rate this Birmingham local?</span>
+                            <span class="text-muted small">{{ review.total_likes }} Brummie(s) raised a glass &bull; {{ review.total_bookmarks }} saved to Pint Passport.</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
                             {% if user.is_authenticated %}
                             <form method="post" action="{% url 'reviews:like' review.slug %}" class="d-inline">
                                 {% csrf_token %}
@@ -73,9 +126,16 @@
                                     {% if user_has_liked %}Cheers'd ({{ review.total_likes }}){% else %}Raise a Glass ({{ review.total_likes }}){% endif %}
                                 </button>
                             </form>
+                            <form method="post" action="{% url 'reviews:bookmark' review.slug %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn {% if user_has_bookmarked %}btn-warning text-dark{% else %}btn-outline-dark{% endif %} fw-semibold">
+                                    <i class="fa-{% if user_has_bookmarked %}solid{% else %}regular{% endif %} fa-bookmark me-1"></i>
+                                    {% if user_has_bookmarked %}In Pint Passport{% else %}Want to Visit{% endif %}
+                                </button>
+                            </form>
                             {% else %}
                             <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary btn-sm">
-                                Log in to Cheer ({{ review.total_likes }})
+                                Log in to Cheer or Bookmark ({{ review.total_likes }})
                             </a>
                             {% endif %}
                         </div>
@@ -83,91 +143,190 @@
                 </div>
             </article>
 
-            <!-- Comment Thread Section -->
+            <!-- Community Reviews, Star Ratings & Pint Reports Section -->
             <section id="comments-section" class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
-                <h3 class="h4 mb-4">
-                    <i class="fa-regular fa-comments text-warning me-2"></i>Bar Chat ({{ comments.count }})
-                </h3>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                    <h3 class="h4 mb-0">
+                        <i class="fa-solid fa-star text-warning me-2"></i>Community Reviews &amp; Pint Reports ({{ review.community_review_count }})
+                    </h3>
+                    <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fa-solid fa-expand me-1"></i>Open Full-Page Review Editor
+                    </a>
+                </div>
 
                 {% for comment in comments %}
-                <div class="border-bottom pb-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
+                <div class="border rounded-4 p-3 p-md-4 mb-3 bg-light bg-opacity-50">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start mb-2 gap-2">
                         <div>
-                            <strong class="text-dark">{{ comment.author.username }}</strong>
+                            <a href="{% url 'reviews:passport' comment.author.username %}" class="fw-bold text-dark text-decoration-none">
+                                <i class="fa-solid fa-passport text-warning me-1"></i>{{ comment.author.username }}
+                            </a>
                             <span class="text-muted small ms-2">{{ comment.created_on|date:"d M Y, H:i" }}</span>
+                            {% if comment.pint_ordered or comment.pint_price %}
+                            <div class="mt-1">
+                                <span class="badge bg-warning bg-opacity-25 text-dark border border-warning">
+                                    🍺 {% if comment.pint_ordered %}{{ comment.pint_ordered }}{% else %}Pint Price Logged{% endif %}
+                                    {% if comment.pint_price %} &bull; <strong>£{{ comment.pint_price|floatformat:2 }}</strong>{% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% if user == comment.author or user.is_staff %}
-                        <form method="post" action="{% url 'reviews:delete_comment' comment.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none">
-                                <i class="fa-regular fa-trash-can me-1"></i>Delete
-                            </button>
-                        </form>
-                        {% endif %}
+
+                        <div class="text-end">
+                            <span class="badge bg-dark text-warning px-2.5 py-1">
+                                <i class="fa-solid fa-star me-1"></i>{{ comment.overall_rating }} / 5
+                            </span>
+                            <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                Pint {{ comment.pint_quality_rating }}/5 &bull; Atmos {{ comment.atmosphere_rating }}/5 &bull; Value {{ comment.value_rating }}/5
+                            </div>
+                            {% if user == comment.author or user.is_staff %}
+                            <form method="post" action="{% url 'reviews:delete_comment' comment.pk %}" class="mt-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none" style="font-size: 0.75rem;">
+                                    <i class="fa-regular fa-trash-can me-1"></i>Delete
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
-                    <p class="mb-0 text-secondary">{{ comment.body }}</p>
+
+                    <p class="mb-2 text-dark">{{ comment.body }}</p>
+
+                    {% if comment.uploaded_image %}
+                    <div class="mt-2">
+                        <a href="{{ comment.uploaded_image.url }}" target="_blank">
+                            <img src="{{ comment.uploaded_image.url }}" alt="Pint photo by {{ comment.author.username }}" class="rounded-3 border shadow-sm" style="max-height: 220px; max-width: 100%; object-fit: cover;">
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
                 {% empty %}
-                <p class="text-muted fst-italic">No comments yet. Be the first to share what's on tap!</p>
+                <p class="text-muted fst-italic mb-3">No community reviews posted below yet. Rate your pint, log the price on tap, or upload a photo below!</p>
                 {% endfor %}
 
-                <!-- Inline Comment Form -->
-                <div class="mt-4 pt-2">
+                <!-- Inline Community Review + Pint Price + Photo Upload Form -->
+                <div id="add-community-review" class="mt-4 pt-4 border-top">
+                    <h4 class="h5 fw-bold mb-3">
+                        <i class="fa-solid fa-beer-mug-empty text-warning me-2"></i>Rate &amp; Review {{ review.pub_name }}
+                    </h4>
                     {% if user.is_authenticated %}
-                    <form method="post" action="{% url 'reviews:add_comment' review.slug %}">
+                    <form method="post" action="{% url 'reviews:add_comment' review.slug %}" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">{{ comment_form.body.label }}</label>
-                            {{ comment_form.body }}
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">{{ comment_form.pint_quality_rating.label }}</label>
+                                {{ comment_form.pint_quality_rating }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">{{ comment_form.atmosphere_rating.label }}</label>
+                                {{ comment_form.atmosphere_rating }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">{{ comment_form.value_rating.label }}</label>
+                                {{ comment_form.value_rating }}
+                            </div>
+
+                            <div class="col-md-7">
+                                <label class="form-label small fw-bold">{{ comment_form.pint_ordered.label }}</label>
+                                {{ comment_form.pint_ordered }}
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-bold">{{ comment_form.pint_price.label }}</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">£</span>
+                                    {{ comment_form.pint_price }}
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">{{ comment_form.uploaded_image.label }}</label>
+                                {{ comment_form.uploaded_image }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">{{ comment_form.body.label }}</label>
+                                {{ comment_form.body }}
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-amber">
-                            <i class="fa-solid fa-paper-plane me-1"></i>Post Comment
+                        <button type="submit" class="btn btn-amber px-4">
+                            <i class="fa-solid fa-paper-plane me-1"></i>Post Rating &amp; Review
                         </button>
                     </form>
                     {% else %}
                     <div class="alert alert-warning mb-0">
                         <a href="{% url 'login' %}?next={{ request.path }}" class="fw-bold text-dark">Log in</a> or
-                        <a href="{% url 'register' %}" class="fw-bold text-dark">Register</a> to join the bar conversation.
+                        <a href="{% url 'register' %}" class="fw-bold text-dark">Register</a> to rate {{ review.pub_name }}, log pint prices, and upload photos.
                     </div>
                     {% endif %}
                 </div>
             </section>
         </div>
 
-        <!-- Right Column: Scorecard & Amenity Badges -->
+        <!-- Right Column: Live Community Scorecard, What's on Tap Tracker & Amenities -->
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 sticky-top" style="top: 95px;">
+                {% if not review.has_community_reviews %}
                 <div class="text-center pb-3 mb-3 border-bottom">
-                    <span class="text-uppercase small fw-bold text-muted">Overall Pub Score</span>
+                    <span class="text-uppercase small fw-bold text-muted">Community Pub Score</span>
+                    <div class="h3 fw-bold text-secondary brand-serif mt-2 mb-1">Not Yet Rated</div>
+                    <p class="small text-muted mb-3">Be the first Brummie to rate this pub's pint, atmosphere, and value.</p>
+                    <a href="#add-community-review" class="btn btn-amber btn-sm w-100 mb-2">
+                        <i class="fa-solid fa-star me-1"></i>Rate &amp; Review on This Page
+                    </a>
+                    <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-secondary btn-sm w-100">
+                        <i class="fa-solid fa-pen-to-square me-1"></i>Full Review Editor (Auto-Filled)
+                    </a>
+                </div>
+                {% else %}
+                <div class="text-center pb-3 mb-3 border-bottom">
+                    <span class="text-uppercase small fw-bold text-muted">Community Average Score</span>
                     <div class="display-4 fw-bold text-dark brand-serif">{{ review.overall_rating }} <span class="fs-4 text-muted">/ 5</span></div>
+                    <div class="small text-muted">Based on {{ review.community_review_count }} Brummie review{{ review.community_review_count|pluralize }}</div>
                 </div>
 
-                <!-- Detailed Star Breakdown -->
-                <div class="mb-4">
+                <!-- Detailed Community Average Breakdown -->
+                <div class="mb-4 pb-3 border-bottom">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-semibold">🍺 Pint Quality</span>
-                        <span>
-                            {% for i in star_range %}
-                                <i class="fa-{% if i <= review.pint_quality_rating %}solid star-filled{% else %}regular star-empty{% endif %} fa-star"></i>
-                            {% endfor %}
-                        </span>
+                        <span class="fw-bold text-dark">{{ review.avg_pint_quality }} / 5 ⭐</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-semibold">🔥 Atmosphere</span>
-                        <span>
-                            {% for i in star_range %}
-                                <i class="fa-{% if i <= review.atmosphere_rating %}solid star-filled{% else %}regular star-empty{% endif %} fa-star"></i>
-                            {% endfor %}
-                        </span>
+                        <span class="fw-bold text-dark">{{ review.avg_atmosphere }} / 5 ⭐</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-semibold">💷 Value for Money</span>
-                        <span>
-                            {% for i in star_range %}
-                                <i class="fa-{% if i <= review.value_rating %}solid star-filled{% else %}regular star-empty{% endif %} fa-star"></i>
-                            {% endfor %}
-                        </span>
+                        <span class="fw-bold text-dark">{{ review.avg_value }} / 5 ⭐</span>
                     </div>
+                </div>
+                {% endif %}
+
+                <!-- What's on Tap & Real Pint Price Tracker -->
+                <div class="mb-4 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h4 class="h6 text-uppercase fw-bold text-muted mb-0">
+                            <i class="fa-solid fa-beer-mug-empty text-warning me-1"></i>What's on Tap &amp; Prices
+                        </h4>
+                        {% if review.avg_pint_price %}
+                        <span class="badge bg-success">Avg £{{ review.avg_pint_price|floatformat:2 }}</span>
+                        {% endif %}
+                    </div>
+                    {% if review.reported_pints %}
+                    <ul class="list-group list-group-flush small">
+                        {% for item in review.reported_pints|slice:":5" %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1.5">
+                            <span>🍺 <strong>{{ item.pint }}</strong> <span class="text-muted">(@{{ item.author }})</span></span>
+                            {% if item.price %}
+                            <span class="badge bg-warning text-dark">£{{ item.price|floatformat:2 }}</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="small text-muted mb-0">
+                        No pint prices logged yet. <a href="#add-community-review" class="text-dark fw-semibold">Log what's on tap &amp; the price of a pint!</a>
+                    </p>
+                    {% endif %}
                 </div>
 
                 <!-- Amenity Indicators -->

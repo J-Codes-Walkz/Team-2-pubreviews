@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Edit Review: {{ object.pub_name }}{% else %}Write a Birmingham Pub Review{% endif %} — The Second City Pint{% endblock %}
+{% block title %}{% if object %}Edit Review: {{ object.pub_name }}{% elif source_pub %}Review {{ source_pub.pub_name }}{% else %}Write a Birmingham Pub Review{% endif %} — The Second City Pint{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -8,11 +8,17 @@
         <div class="col-lg-9">
             <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
                 <h1 class="h2 mb-1">
-                    {% if object %}Edit Review for {{ object.pub_name }}{% else %}Review a Birmingham Boozer{% endif %}
+                    {% if object %}
+                        Edit Review for {{ object.pub_name }}
+                    {% elif source_pub %}
+                        Review {{ source_pub.pub_name }}
+                    {% else %}
+                        Review a Birmingham Boozer
+                    {% endif %}
                 </h1>
                 <p class="text-muted mb-4">Share honest notes on the ale condition, price of a pint, and atmosphere.</p>
 
-                <form method="post" novalidate>
+                <form method="post" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
 
                     {% if form.errors %}
@@ -22,15 +28,108 @@
                     </div>
                     {% endif %}
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Pub Name *</label>
-                            {{ form.pub_name }}
-                            <div class="text-danger small">{{ form.pub_name.errors }}</div>
+                    <!-- Auto-Filled Pub Summary Banner (shown when clicking from a pub card or selecting a pub) -->
+                    <div id="autofill-pub-banner" class="p-3 p-md-4 mb-4 rounded-4 border {% if not source_pub and not object %}d-none{% endif %}" style="background-color: #faf6ee; border-color: var(--pub-border) !important;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <img id="banner-pub-img" src="{% if object %}{{ object.image_url }}{% elif source_pub %}{{ source_pub.image_url }}{% endif %}" alt="Pub preview" class="rounded-3 shadow-sm" style="width: 84px; height: 68px; object-fit: cover;">
+                                <div>
+                                    <span class="badge bg-success mb-1"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Pub Details Auto-Filled</span>
+                                    <h2 id="banner-pub-name" class="h5 fw-bold mb-0 text-dark">
+                                        {% if object %}{{ object.pub_name }}{% elif source_pub %}{{ source_pub.pub_name }}{% endif %}
+                                    </h2>
+                                    <div id="banner-pub-meta" class="small text-muted">
+                                        {% if object %}
+                                            {{ object.address }}{% if object.address and object.postcode %}, {% endif %}{{ object.postcode }} &bull; {{ object.get_brum_area_display }}
+                                        {% elif source_pub %}
+                                            {{ source_pub.address }}{% if source_pub.address and source_pub.postcode %}, {% endif %}{{ source_pub.postcode }} &bull; {{ source_pub.get_brum_area_display }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePubDetailsSection()">
+                                <i class="fa-solid fa-Sliders me-1"></i>Edit Pub Details
+                            </button>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Birmingham District *</label>
-                            {{ form.brum_area }}
+                    </div>
+
+                    {% if pub_catalog_names %}
+                    <datalist id="birmingham-pubs-datalist">
+                        {% for name in pub_catalog_names %}
+                            <option value="{{ name }}"></option>
+                        {% endfor %}
+                    </datalist>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <!-- Pub Location & Style Fields (auto-filled; collapsible if coming directly from a pub card) -->
+                        <div id="pub-details-fields" class="col-12 {% if source_pub and not form.errors %}d-none{% endif %}">
+                            <div class="p-3 rounded-3 bg-light border mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="fw-bold small text-uppercase text-muted">
+                                        <i class="fa-solid fa-location-dot text-warning me-1"></i>Pub Location &amp; Category (Auto-Fills When You Select a Pub)
+                                    </span>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Pub Name *</label>
+                                        {{ form.pub_name }}
+                                        <div class="form-text">Start typing any of our 470 Birmingham pubs to auto-fill its details.</div>
+                                        <div class="text-danger small">{{ form.pub_name.errors }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Birmingham District *</label>
+                                        {{ form.brum_area }}
+                                    </div>
+
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-semibold">Street Address</label>
+                                        {{ form.address }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-semibold">Postcode</label>
+                                        {{ form.postcode }}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Pub Style / Category</label>
+                                        {{ form.category }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Price Point *</label>
+                                        {{ form.price_point }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Star Ratings Row -->
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">🍺 Pint Quality *</label>
+                            {{ form.pint_quality_rating }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">🔥 Atmosphere *</label>
+                            {{ form.atmosphere_rating }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">💷 Value Rating *</label>
+                            {{ form.value_rating }}
+                        </div>
+
+                        <!-- What's On Tap & Pint Price Tracker Row -->
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">🍺 What's on Tap / Pint Ordered (Optional)</label>
+                            {{ form.pint_ordered }}
+                            <div class="form-text">e.g., Bathams Best Bitter, Attic Intuition Pale, Guinness</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">💷 Price Paid (£) (Optional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">£</span>
+                                {{ form.pint_price }}
+                            </div>
+                            <div class="form-text">Helps track Brum's best-value pints!</div>
                         </div>
 
                         <div class="col-md-12">
@@ -39,33 +138,50 @@
                             <div class="text-danger small">{{ form.title.errors }}</div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Pub Style / Category</label>
-                            {{ form.category }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Price Point *</label>
-                            {{ form.price_point }}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Your Review *</label>
+                            {{ form.content }}
+                            <div class="text-danger small">{{ form.content.errors }}</div>
                         </div>
 
-                        <!-- Ratings Row -->
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">🍺 Pint Quality</label>
-                            {{ form.pint_quality_rating }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">🔥 Atmosphere</label>
-                            {{ form.atmosphere_rating }}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">💷 Value Rating</label>
-                            {{ form.value_rating }}
+                        <!-- Picture Upload Section -->
+                        <div class="col-12">
+                            <div class="p-3 p-md-4 rounded-3 border bg-light mt-1">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold mb-1">
+                                            <i class="fa-solid fa-camera text-warning me-1"></i>Upload a Picture of the Pub or Your Pint
+                                        </label>
+                                        <p class="text-muted small mb-2">
+                                            Choose a photo from your device or phone camera (JPG, PNG, WEBP). If you don't upload one, we'll keep the pub's existing photo.
+                                        </p>
+                                        {{ form.uploaded_image }}
+                                        <div class="text-danger small">{{ form.uploaded_image.errors }}</div>
+
+                                        <div class="mt-3">
+                                            <a class="small text-secondary text-decoration-none" data-bs-toggle="collapse" href="#optionalImageUrlCollapse" role="button" aria-expanded="false">
+                                                <i class="fa-solid fa-link me-1"></i>Or paste a direct image URL instead
+                                            </a>
+                                            <div class="collapse mt-2" id="optionalImageUrlCollapse">
+                                                {{ form.featured_image }}
+                                                <div class="text-danger small">{{ form.featured_image.errors }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-center">
+                                        <div class="border rounded-3 bg-white p-2 shadow-sm d-inline-block">
+                                            <img id="live-photo-preview" src="{% if object %}{{ object.image_url }}{% elif source_pub %}{{ source_pub.image_url }}{% else %}https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=80{% endif %}" alt="Photo Preview" class="rounded-2" style="width: 180px; height: 120px; object-fit: cover;">
+                                            <div id="live-photo-caption" class="small text-muted mt-1">Current Pub Photo</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Amenities Checkboxes -->
                         <div class="col-12">
-                            <div class="p-3 rounded-3 bg-light border mt-2">
-                                <span class="d-block fw-semibold small text-uppercase text-muted mb-2">Tick Available Pub Amenities</span>
+                            <div class="p-3 rounded-3 bg-light border mt-1">
+                                <span class="d-block fw-semibold small text-uppercase text-muted mb-2">Pub Amenities (Auto-Filled — Adjust if Needed)</span>
                                 <div class="d-flex flex-wrap gap-4">
                                     <div class="form-check">
                                         {{ form.serves_cask_ale }}
@@ -91,22 +207,12 @@
                             </div>
                         </div>
 
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Short Card Summary (Excerpt)</label>
-                            {{ form.excerpt }}
-                            <div class="form-text">{{ form.excerpt.help_text }}</div>
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-semibold">Full Review *</label>
-                            {{ form.content }}
-                            <div class="text-danger small">{{ form.content.errors }}</div>
-                        </div>
-
                         <div class="col-md-8">
-                            <label class="form-label fw-semibold">Featured Image URL</label>
-                            {{ form.featured_image }}
+                            <label class="form-label fw-semibold">Short Card Summary (Optional)</label>
+                            {{ form.excerpt }}
+                            <div class="form-text">Leave blank to auto-generate from your review.</div>
                         </div>
+
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Publication Status</label>
                             {{ form.status }}
@@ -114,7 +220,7 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                        <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                        <a href="{% if source_pub %}{{ source_pub.get_absolute_url }}{% else %}{% url 'reviews:index' %}{% endif %}" class="btn btn-outline-secondary px-4">Cancel</a>
                         <button type="submit" class="btn btn-amber px-4">
                             <i class="fa-solid fa-check me-1"></i>{% if object %}Save Changes{% else %}Publish Review{% endif %}
                         </button>
@@ -124,4 +230,94 @@
         </div>
     </div>
 </div>
+
+<script>
+    function togglePubDetailsSection() {
+        const sec = document.getElementById('pub-details-fields');
+        if (sec) {
+            sec.classList.toggle('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Live preview when user selects an image file to upload
+        const fileInput = document.querySelector('input[type="file"][name="uploaded_image"]');
+        const previewImg = document.getElementById('live-photo-preview');
+        const previewCaption = document.getElementById('live-photo-caption');
+
+        if (fileInput && previewImg) {
+            fileInput.addEventListener('change', function () {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        if (previewCaption) {
+                            previewCaption.textContent = 'Your Uploaded Photo Preview';
+                            previewCaption.className = 'small text-success fw-semibold mt-1';
+                        }
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+
+        // 2. Auto-fill pub details when user selects or types a known Birmingham pub name
+        const catalogRaw = '{{ pub_directory_json|escapejs }}';
+        if (!catalogRaw) return;
+        let pubCatalog = {};
+        try {
+            pubCatalog = JSON.parse(catalogRaw);
+        } catch (err) {
+            return;
+        }
+
+        const pubNameInput = document.getElementById('id_pub_name');
+        if (!pubNameInput) return;
+
+        pubNameInput.addEventListener('change', function () {
+            const val = this.value.trim();
+            const match = pubCatalog[val];
+            if (!match) return;
+
+            const setVal = (id, v) => {
+                const el = document.getElementById(id);
+                if (el && v !== undefined && v !== null) el.value = v;
+            };
+            const setChk = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.checked = Boolean(v);
+            };
+
+            setVal('id_brum_area', match.brum_area);
+            setVal('id_address', match.address);
+            setVal('id_postcode', match.postcode);
+            setVal('id_category', match.category_id);
+            setVal('id_price_point', match.price_point);
+            setVal('id_featured_image', match.featured_image);
+
+            setChk('id_serves_cask_ale', match.serves_cask_ale);
+            setChk('id_serves_cobs_or_food', match.serves_cobs_or_food);
+            setChk('id_has_beer_garden', match.has_beer_garden);
+            setChk('id_is_dog_friendly', match.is_dog_friendly);
+            setChk('id_shows_live_sports', match.shows_live_sports);
+
+            if (match.featured_image && previewImg && (!fileInput || !fileInput.files.length)) {
+                previewImg.src = match.featured_image;
+            }
+
+            const banner = document.getElementById('autofill-pub-banner');
+            const bannerImg = document.getElementById('banner-pub-img');
+            const bannerName = document.getElementById('banner-pub-name');
+            const bannerMeta = document.getElementById('banner-pub-meta');
+            if (banner && bannerName && bannerMeta) {
+                banner.classList.remove('d-none');
+                bannerName.textContent = match.pub_name;
+                bannerMeta.textContent = [match.address, match.postcode].filter(Boolean).join(', ');
+                if (bannerImg && match.featured_image) {
+                    bannerImg.src = match.featured_image;
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

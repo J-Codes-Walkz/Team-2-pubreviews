@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }}'s Pint Passport — The Second City Pint{% endblock %}
+
+{% block content %}
+<!-- Passport Header Banner -->
+<section class="hero-banner py-5">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <div class="d-inline-flex align-items-center gap-2 badge bg-warning text-dark fw-bold px-3 py-2 text-uppercase mb-3">
+                    <i class="fa-solid fa-passport"></i> Official Second City Pint Passport
+                </div>
+                <h1 class="display-5 fw-bold mb-2">{{ profile_user.username }}</h1>
+                <p class="text-light opacity-90 mb-0">
+                    Member since {{ profile_user.date_joined|date:"F Y" }} &bull;
+                    <strong>{{ stamped_count }} of {{ total_districts }}</strong> Birmingham districts stamped &bull;
+                    <strong>{{ earned_badges_count }}</strong> Brummie badges unlocked
+                </p>
+            </div>
+
+            <!-- Key Passport Metrics -->
+            <div class="col-lg-5">
+                <div class="row g-2 text-center">
+                    <div class="col-3">
+                        <div class="p-3 rounded-4 bg-dark bg-opacity-50 border border-warning border-opacity-50">
+                            <div class="h3 fw-bold text-warning mb-0 brand-serif">{{ published_reviews.count }}</div>
+                            <div class="small text-light opacity-75">Reviews</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-3 rounded-4 bg-dark bg-opacity-50 border border-warning border-opacity-50">
+                            <div class="h3 fw-bold text-warning mb-0 brand-serif">{{ total_cheers_received }}</div>
+                            <div class="small text-light opacity-75">Cheers</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-3 rounded-4 bg-dark bg-opacity-50 border border-warning border-opacity-50">
+                            <div class="h3 fw-bold text-warning mb-0 brand-serif">{{ bookmarked_reviews.count }}</div>
+                            <div class="small text-light opacity-75">Wishlist</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-3 rounded-4 bg-dark bg-opacity-50 border border-warning border-opacity-50">
+                            <div class="h3 fw-bold text-warning mb-0 brand-serif">{{ avg_pint_rating }}</div>
+                            <div class="small text-light opacity-75">Avg Pint</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container py-5">
+    <div class="row g-4 mb-5">
+        <!-- Left: Birmingham District Stamp Book -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="border: 1px solid var(--pub-border) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h4 mb-0">🗺️ Birmingham District Stamps</h2>
+                        <p class="text-muted small mb-0">Stamp a district by publishing a review or cheering a pub in that area.</p>
+                    </div>
+                    <span class="badge rounded-pill bg-success px-3 py-2">
+                        {{ stamped_count }} / {{ total_districts }} Stamped
+                    </span>
+                </div>
+
+                <div class="row g-2">
+                    {% for district in district_stamps %}
+                    <div class="col-6 col-sm-4">
+                        <a href="{% url 'reviews:index' %}?area={{ district.code }}" class="text-decoration-none">
+                            <div class="p-3 rounded-3 border text-center h-100 transition {% if district.stamped %}bg-warning bg-opacity-10 border-warning{% else %}bg-light text-muted opacity-75{% endif %}">
+                                <div class="fs-4 mb-1">
+                                    {% if district.reviewed %}
+                                        🏅
+                                    {% elif district.stamped %}
+                                        🍺
+                                    {% else %}
+                                        🔒
+                                    {% endif %}
+                                </div>
+                                <div class="fw-bold small text-dark">{{ district.label }}</div>
+                                <div class="small" style="font-size: 0.72rem;">
+                                    {% if district.reviewed %}
+                                        <span class="text-success fw-semibold">Reviewed</span>
+                                    {% elif district.stamped %}
+                                        <span class="text-warning text-dark fw-semibold">Cheers'd</span>
+                                    {% else %}
+                                        <span class="text-muted">Unvisited</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Earned Brummie Achievements / Badges -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100" style="border: 1px solid var(--pub-border) !important;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h2 class="h4 mb-0">🏆 Brummie Badges</h2>
+                        <p class="text-muted small mb-0">Unlocked by exploring Birmingham's pub culture.</p>
+                    </div>
+                    <span class="badge rounded-pill bg-warning text-dark fw-bold px-3 py-2">
+                        {{ earned_badges_count }} / {{ badges|length }}
+                    </span>
+                </div>
+
+                <div class="d-flex flex-column gap-2">
+                    {% for badge in badges %}
+                    <div class="d-flex align-items-center gap-3 p-2.5 px-3 py-2 rounded-3 border {% if badge.earned %}bg-white border-success border-opacity-50 shadow-sm{% else %}bg-light opacity-75{% endif %}">
+                        <div class="fs-3">{{ badge.icon }}</div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="fw-bold small text-dark">{{ badge.title }}</span>
+                                {% if badge.earned %}
+                                <span class="badge bg-success" style="font-size: 0.68rem;">✓ Unlocked</span>
+                                {% else %}
+                                <span class="badge bg-secondary" style="font-size: 0.68rem;">{{ badge.progress_label }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted" style="font-size: 0.78rem;">{{ badge.description }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs for Reviews, Want to Visit Wishlist, Cheers'd, and Drafts -->
+    <ul class="nav nav-pills gap-2 mb-4" id="passportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold px-4" id="tab-published" data-bs-toggle="pill" data-bs-target="#pane-published" type="button" role="tab">
+                <i class="fa-solid fa-pen-nib me-1"></i>Published Reviews ({{ published_reviews.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold px-4" id="tab-wishlist" data-bs-toggle="pill" data-bs-target="#pane-wishlist" type="button" role="tab">
+                <i class="fa-solid fa-bookmark me-1"></i>Want to Visit Wishlist ({{ bookmarked_reviews.count }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold px-4" id="tab-liked" data-bs-toggle="pill" data-bs-target="#pane-liked" type="button" role="tab">
+                <i class="fa-solid fa-beer-mug-empty me-1"></i>Cheers'd Pints ({{ liked_reviews.count }})
+            </button>
+        </li>
+        {% if is_own_passport and draft_reviews %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold px-4" id="tab-drafts" data-bs-toggle="pill" data-bs-target="#pane-drafts" type="button" role="tab">
+                <i class="fa-solid fa-file-pen me-1"></i>My Drafts ({{ draft_reviews.count }})
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="tab-content" id="passportTabsContent">
+        <!-- TAB 1: Published Reviews -->
+        <div class="tab-pane fade show active" id="pane-published" role="tabpanel">
+            <div class="row g-4">
+                {% for review in published_reviews %}
+                <div class="col-md-6 col-lg-4">
+                    <article class="pub-card position-relative h-100 d-flex flex-column">
+                        <div class="position-relative">
+                            <a href="{{ review.get_absolute_url }}">
+                                <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img">
+                            </a>
+                            <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2">
+                                <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
+                            </span>
+                            <span class="badge rounded-pill bg-dark bg-opacity-75 text-warning position-absolute top-0 end-0 m-3 px-2 py-1">
+                                {{ review.price_point }}
+                            </span>
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span class="text-uppercase fw-bold small text-success">{{ review.pub_name }}</span>
+                                <span class="badge bg-warning text-dark">{{ review.pint_quality_rating }}/5 🍺</span>
+                            </div>
+                            <h3 class="h5 fw-bold mb-2">
+                                <a href="{{ review.get_absolute_url }}" class="text-decoration-none text-dark stretched-link">
+                                    {{ review.title }}
+                                </a>
+                            </h3>
+                            <p class="text-muted small mb-3 flex-grow-1">{{ review.excerpt }}</p>
+                            <div class="pt-3 border-top d-flex justify-content-between align-items-center small text-muted">
+                                <span>{{ review.created_on|date:"d M Y" }}</span>
+                                <span class="fw-semibold text-dark">
+                                    ❤️ {{ review.like_count }} &nbsp; 💬 {{ review.comment_count }}
+                                </span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 bg-white rounded-4 border p-4">
+                        <p class="text-muted mb-3">{{ profile_user.username }} hasn't published any pub reviews yet.</p>
+                        {% if is_own_passport %}
+                        <a href="{% url 'reviews:create' %}" class="btn btn-amber">Write Your First Pub Review</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TAB 2: Want to Visit Wishlist (Bookmarks) -->
+        <div class="tab-pane fade" id="pane-wishlist" role="tabpanel">
+            <div class="row g-4">
+                {% for review in bookmarked_reviews %}
+                <div class="col-md-6 col-lg-4">
+                    <article class="pub-card position-relative h-100 d-flex flex-column">
+                        <div class="position-relative">
+                            <a href="{{ review.get_absolute_url }}">
+                                <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img">
+                            </a>
+                            <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2">
+                                <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
+                            </span>
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <span class="text-uppercase fw-bold small text-success">{{ review.pub_name }}</span>
+                                <span class="badge bg-warning text-dark">{{ review.pint_quality_rating }}/5 🍺</span>
+                            </div>
+                            <h3 class="h5 fw-bold mb-2">
+                                <a href="{{ review.get_absolute_url }}" class="text-decoration-none text-dark">
+                                    {{ review.title }}
+                                </a>
+                            </h3>
+                            <p class="text-muted small mb-3 flex-grow-1">{{ review.excerpt }}</p>
+
+                            <div class="pt-3 border-top d-flex justify-content-between align-items-center small">
+                                <a href="{{ review.get_absolute_url }}" class="btn btn-outline-dark btn-sm">Read Review</a>
+                                {% if is_own_passport %}
+                                <form method="post" action="{% url 'reviews:bookmark' review.slug %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="fa-solid fa-xmark me-1"></i>Remove
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 bg-white rounded-4 border p-4">
+                        <i class="fa-regular fa-bookmark fa-2x text-warning mb-2"></i>
+                        <h3 class="h5">No pubs in the "Want to Visit" wishlist yet</h3>
+                        <p class="text-muted small mb-3">Click <strong>"Want to Visit"</strong> on any pub review to save it to your Pint Passport.</p>
+                        <a href="{% url 'reviews:index' %}" class="btn btn-amber btn-sm px-4">Browse Birmingham Pubs</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TAB 3: Cheers'd Pints (Liked Reviews) -->
+        <div class="tab-pane fade" id="pane-liked" role="tabpanel">
+            <div class="row g-4">
+                {% for review in liked_reviews %}
+                <div class="col-md-6 col-lg-4">
+                    <article class="pub-card position-relative h-100 d-flex flex-column">
+                        <div class="position-relative">
+                            <a href="{{ review.get_absolute_url }}">
+                                <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img">
+                            </a>
+                            <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2">
+                                <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
+                            </span>
+                        </div>
+                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                            <span class="text-uppercase fw-bold small text-success mb-1">{{ review.pub_name }}</span>
+                            <h3 class="h5 fw-bold mb-2">
+                                <a href="{{ review.get_absolute_url }}" class="text-decoration-none text-dark stretched-link">
+                                    {{ review.title }}
+                                </a>
+                            </h3>
+                            <p class="text-muted small mb-3 flex-grow-1">{{ review.excerpt }}</p>
+                            <div class="pt-3 border-top d-flex justify-content-between align-items-center small text-muted">
+                                <span>By {{ review.author.username }}</span>
+                                <span class="fw-semibold text-dark">❤️ {{ review.like_count }}</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5 bg-white rounded-4 border p-4">
+                        <p class="text-muted mb-0">No reviews cheered yet.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- TAB 4: Drafts (Owner Only) -->
+        {% if is_own_passport and draft_reviews %}
+        <div class="tab-pane fade" id="pane-drafts" role="tabpanel">
+            <div class="row g-4">
+                {% for review in draft_reviews %}
+                <div class="col-md-6 col-lg-4">
+                    <article class="pub-card h-100 d-flex flex-column border-warning">
+                        <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-danger">DRAFT</span>
+                                <span class="small text-muted">{{ review.get_brum_area_display }}</span>
+                            </div>
+                            <span class="text-uppercase fw-bold small text-success">{{ review.pub_name }}</span>
+                            <h3 class="h5 fw-bold mb-2">{{ review.title }}</h3>
+                            <p class="text-muted small mb-3 flex-grow-1">{{ review.excerpt }}</p>
+                            <div class="d-flex gap-2 pt-3 border-top">
+                                <a href="{% url 'reviews:edit' review.slug %}" class="btn btn-warning btn-sm fw-semibold flex-grow-1">Edit &amp; Publish</a>
+                                <a href="{% url 'reviews:detail' review.slug %}" class="btn btn-outline-secondary btn-sm">Preview</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

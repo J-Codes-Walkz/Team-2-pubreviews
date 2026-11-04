@@ -29,12 +29,15 @@
 </section>
 
 <!-- Dynamic Filter Controls -->
-<section id="filter-bar" class="container mt-n4 position-relative" style="margin-top: -28px;">
-    <form method="get" class="card shadow-sm border-0 p-4 rounded-4" style="border: 1px solid var(--pub-border) !important;">
+<section id="filter-bar" class="container mt-n4 position-relative" style="margin-top: -28px; z-index: 10;">
+    <form method="get" id="pub-filter-form" class="card shadow-sm border-0 p-4 rounded-4" style="border: 1px solid var(--pub-border) !important;">
+        <input type="hidden" name="lat" id="gps-lat" value="{{ user_lat }}">
+        <input type="hidden" name="lng" id="gps-lng" value="{{ user_lng }}">
+
         <div class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label class="form-label fw-semibold small text-uppercase text-muted">Birmingham District</label>
-                <select name="area" class="form-select">
+                <select name="area" class="form-select" onchange="this.form.submit()">
                     <option value="">All Brum Areas</option>
                     {% for code, label in brum_areas %}
                         <option value="{{ code }}" {% if selected_area == code %}selected{% endif %}>{{ label }}</option>
@@ -44,7 +47,7 @@
 
             <div class="col-md-3">
                 <label class="form-label fw-semibold small text-uppercase text-muted">Pub Style</label>
-                <select name="category" class="form-select">
+                <select name="category" class="form-select" onchange="this.form.submit()">
                     <option value="">All Styles</option>
                     {% for cat in categories %}
                         <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
@@ -59,47 +62,61 @@
 
             <div class="col-md-3">
                 <label class="form-label fw-semibold small text-uppercase text-muted">Sort By</label>
-                <select name="sort" class="form-select">
-                    <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>Newest Reviews</option>
-                    <option value="top_pint" {% if selected_sort == 'top_pint' %}selected{% endif %}>Highest Pint Quality</option>
-                    <option value="most_liked" {% if selected_sort == 'most_liked' %}selected{% endif %}>Most Cheers (Likes)</option>
+                <select name="sort" class="form-select" onchange="this.form.submit()">
+                    <option value="nearest" {% if selected_sort == 'nearest' %}selected{% endif %}>📍 Closest to Me &amp; Best Rated</option>
+                    <option value="top_pint" {% if selected_sort == 'top_pint' %}selected{% endif %}>⭐ Best Average Rating</option>
+                    <option value="cheapest_pint" {% if selected_sort == 'cheapest_pint' %}selected{% endif %}>💷 Cheapest Pint Price (£)</option>
+                    <option value="most_liked" {% if selected_sort == 'most_liked' %}selected{% endif %}>🍻 Most Cheers (Likes)</option>
+                    <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>🕒 Newest Reviews</option>
                 </select>
             </div>
         </div>
 
-        <!-- Amenity Checkboxes -->
+        <!-- Amenity Checkboxes & GPS Controls -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-3 pt-3 border-top">
             <div class="d-flex flex-wrap gap-3 align-items-center">
                 <span class="small fw-bold text-uppercase text-muted me-1">Must Have:</span>
 
                 <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="chk_cask" name="cask" value="1" {% if active_amenities.cask %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" id="chk_cask" name="cask" value="1" onchange="this.form.submit()" {% if active_amenities.cask %}checked{% endif %}>
                     <label class="form-check-label small fw-medium" for="chk_cask">🍺 Cask Ale</label>
                 </div>
 
                 <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="chk_cobs" name="cobs" value="1" {% if active_amenities.cobs %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" id="chk_cobs" name="cobs" value="1" onchange="this.form.submit()" {% if active_amenities.cobs %}checked{% endif %}>
                     <label class="form-check-label small fw-medium" for="chk_cobs">🥪 Cobs / Grub</label>
                 </div>
 
                 <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="chk_garden" name="garden" value="1" {% if active_amenities.garden %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" id="chk_garden" name="garden" value="1" onchange="this.form.submit()" {% if active_amenities.garden %}checked{% endif %}>
                     <label class="form-check-label small fw-medium" for="chk_garden">☀️ Beer Garden</label>
                 </div>
 
                 <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="chk_dogs" name="dogs" value="1" {% if active_amenities.dogs %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" id="chk_dogs" name="dogs" value="1" onchange="this.form.submit()" {% if active_amenities.dogs %}checked{% endif %}>
                     <label class="form-check-label small fw-medium" for="chk_dogs">🐕 Dog Friendly</label>
                 </div>
 
                 <div class="form-check form-check-inline m-0">
-                    <input class="form-check-input" type="checkbox" id="chk_sports" name="sports" value="1" {% if active_amenities.sports %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" id="chk_sports" name="sports" value="1" onchange="this.form.submit()" {% if active_amenities.sports %}checked{% endif %}>
                     <label class="form-check-label small fw-medium" for="chk_sports">📺 Live Sports</label>
                 </div>
             </div>
 
-            <div class="d-flex gap-2">
-                <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary btn-sm px-3">Reset</a>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                {% if has_gps %}
+                    <button type="button" id="btn-locate-me" class="btn btn-success btn-sm px-3" onclick="requestUserGPS(true)" title="Refresh your GPS coordinates">
+                        <i class="fa-solid fa-location-crosshairs me-1"></i>GPS Active
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm px-2" onclick="clearUserGPS()" title="Turn off GPS sorting">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                {% else %}
+                    <button type="button" id="btn-locate-me" class="btn btn-outline-success btn-sm px-3" onclick="requestUserGPS(true)">
+                        <i class="fa-solid fa-location-crosshairs me-1"></i>Near Me (GPS)
+                    </button>
+                {% endif %}
+                <a href="{% url 'reviews:index' %}" class="btn btn-outline-secondary btn-sm px-3" onclick="sessionStorage.removeItem('scp_gps_lat'); sessionStorage.removeItem('scp_gps_lng');">Reset</a>
                 <button type="submit" class="btn btn-amber btn-sm px-4">
                     <i class="fa-solid fa-filter me-1"></i>Apply Filters
                 </button>
@@ -110,41 +127,80 @@
 
 <!-- Pub Review Card Grid -->
 <section class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h3 mb-0">Latest Second City Dispatches</h2>
-        <span class="text-muted small">{{ page_obj.paginator.count|default:reviews.count }} pub review(s) found</span>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="h3 mb-0">
+                {% if has_gps and selected_sort == 'nearest' %}
+                    <i class="fa-solid fa-location-dot text-success me-2"></i>Pubs Closest to You
+                {% elif selected_sort == 'top_pint' %}
+                    <i class="fa-solid fa-ranking-star text-warning me-2"></i>Highest Rated Birmingham Pubs
+                {% else %}
+                    Latest Second City Dispatches
+                {% endif %}
+            </h2>
+            {% if has_gps %}
+                <span class="text-success small fw-medium">
+                    <i class="fa-solid fa-satellite-dish me-1"></i>Ordered by distance from your GPS location &amp; best average rating
+                </span>
+            {% endif %}
+        </div>
+        <span class="text-muted small">{{ page_obj.paginator.count|default:reviews.count }} pub(s) found</span>
     </div>
 
     <div class="row g-4">
         {% for review in reviews %}
         <div class="col-md-6 col-lg-4">
-            <article class="pub-card h-100 d-flex flex-column">
+            <article class="pub-card position-relative h-100 d-flex flex-column">
                 <div class="position-relative">
                     <a href="{{ review.get_absolute_url }}">
-                        <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img">
+                        <img src="{{ review.image_url }}" alt="{{ review.pub_name }}" class="pub-card-img" loading="lazy" onerror="this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';">
                     </a>
                     <!-- Birmingham Area Pill Badge -->
                     <span class="badge rounded-pill badge-area position-absolute top-0 start-0 m-3 px-3 py-2 shadow-sm">
                         <i class="fa-solid fa-map-pin me-1 text-warning"></i>{{ review.get_brum_area_display }}
                     </span>
-                    <!-- Price Point Pill -->
+                    <!-- Price Point / Avg Pint Price Pill -->
                     <span class="badge rounded-pill bg-dark bg-opacity-75 text-warning position-absolute top-0 end-0 m-3 px-2 py-1">
-                        {{ review.price_point }}
+                        {% if review.avg_pint_price %}
+                            🍺 £{{ review.avg_pint_price|floatformat:2 }}
+                        {% else %}
+                            {{ review.price_point }}
+                        {% endif %}
                     </span>
+                    {% if review.distance_miles is not None %}
+                    <!-- GPS Distance Badge -->
+                    <span class="badge rounded-pill bg-success text-white position-absolute bottom-0 start-0 m-3 px-3 py-1 shadow-sm">
+                        <i class="fa-solid fa-location-arrow me-1"></i>{{ review.distance_miles }} mi away
+                    </span>
+                    {% endif %}
                 </div>
 
                 <div class="card-body p-4 d-flex flex-column flex-grow-1">
-                    <!-- Pub Name & Pint Quality Stars -->
+                    <!-- Pub Name & Average Rating Stars -->
                     <div class="d-flex justify-content-between align-items-start mb-1">
-                        <span class="text-uppercase fw-bold small text-success">{{ review.pub_name }}</span>
-                        <div class="small" title="Pint Quality: {{ review.pint_quality_rating }}/5">
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= review.pint_quality_rating %}
-                                    <i class="fa-solid fa-star star-filled"></i>
-                                {% else %}
-                                    <i class="fa-regular fa-star star-empty"></i>
-                                {% endif %}
-                            {% endfor %}
+                        <div>
+                            <span class="text-uppercase fw-bold small text-success d-block">{{ review.pub_name }}</span>
+                            {% if review.address or review.postcode %}
+                            <span class="text-muted d-block" style="font-size: 0.75rem;">
+                                <i class="fa-solid fa-location-dot me-1"></i>{{ review.address }}{% if review.address and review.postcode %}, {% endif %}{{ review.postcode }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="small text-nowrap ms-2 text-end">
+                            {% if not review.has_community_reviews %}
+                                <span class="badge bg-light text-secondary border">No reviews yet</span>
+                            {% else %}
+                                <div>
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.overall_rating %}
+                                            <i class="fa-solid fa-star star-filled"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-star star-empty"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ review.overall_rating }}/5 avg ({{ review.community_review_count }})</span>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -177,8 +233,14 @@
 
                     <!-- Card Footer Metadata -->
                     <div class="pt-3 border-top d-flex justify-content-between align-items-center small text-muted">
-                        <span>
-                            <i class="fa-regular fa-user me-1"></i>{{ review.author.username }} &bull; {{ review.created_on|date:"d M Y" }}
+                        <span class="position-relative" style="z-index: 2;">
+                            {% if review.author.username == 'pub_directory' %}
+                                <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-dark btn-sm py-0 px-2 fw-semibold" style="font-size: 0.78rem;">
+                                    <i class="fa-solid fa-pen-to-square text-warning me-1"></i>Review This Pub
+                                </a>
+                            {% else %}
+                                <i class="fa-regular fa-user me-1"></i><a href="{% url 'reviews:passport' review.author.username %}" class="text-decoration-none text-muted fw-semibold">{{ review.author.username }}</a> &bull; {{ review.created_on|date:"d M Y" }}
+                            {% endif %}
                         </span>
                         <span class="fw-semibold text-dark">
                             <i class="fa-solid fa-heart text-danger me-1"></i>{{ review.like_count|default:review.total_likes }}
@@ -200,5 +262,116 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- Pagination Bar -->
+    {% if is_paginated %}
+    <nav aria-label="Pub review pages" class="mt-5 d-flex justify-content-center">
+        <ul class="pagination shadow-sm">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link text-dark fw-semibold" href="?{% if filter_querystring %}{{ filter_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                    &laquo; Previous
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; Previous</span></li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link bg-warning text-dark fw-bold border-warning">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link text-dark fw-semibold" href="?{% if filter_querystring %}{{ filter_querystring }}&{% endif %}page={{ page_obj.next_page_number }}">
+                    Next &raquo;
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
 </section>
+
+<script>
+    function applyGPSCoordinates(lat, lng) {
+        const latInput = document.getElementById('gps-lat');
+        const lngInput = document.getElementById('gps-lng');
+        const form = document.getElementById('pub-filter-form');
+        if (!latInput || !lngInput || !form) return;
+
+        const roundedLat = Number(lat).toFixed(5);
+        const roundedLng = Number(lng).toFixed(5);
+        sessionStorage.setItem('scp_gps_lat', roundedLat);
+        sessionStorage.setItem('scp_gps_lng', roundedLng);
+        sessionStorage.removeItem('scp_gps_disabled');
+
+        latInput.value = roundedLat;
+        lngInput.value = roundedLng;
+        form.submit();
+    }
+
+    function requestUserGPS(isManual) {
+        if (!navigator.geolocation) {
+            if (isManual) {
+                alert('Geolocation is not supported by your browser.');
+            }
+            return;
+        }
+        const btn = document.getElementById('btn-locate-me');
+        if (btn && isManual) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Locating...';
+        }
+        navigator.geolocation.getCurrentPosition(
+            function (position) {
+                applyGPSCoordinates(position.coords.latitude, position.coords.longitude);
+            },
+            function (err) {
+                if (btn && isManual) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-location-crosshairs me-1"></i>Near Me (GPS)';
+                    alert('Unable to access your GPS location. Please allow location access in your browser.');
+                } else {
+                    sessionStorage.setItem('scp_gps_disabled', '1');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+    }
+
+    function clearUserGPS() {
+        sessionStorage.removeItem('scp_gps_lat');
+        sessionStorage.removeItem('scp_gps_lng');
+        sessionStorage.setItem('scp_gps_disabled', '1');
+        const latInput = document.getElementById('gps-lat');
+        const lngInput = document.getElementById('gps-lng');
+        const form = document.getElementById('pub-filter-form');
+        if (latInput && lngInput && form) {
+            latInput.value = '';
+            lngInput.value = '';
+            form.submit();
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const hasGpsInUrl = "{{ has_gps|yesno:'true,false' }}" === "true";
+        const selectedSort = "{{ selected_sort }}";
+        const gpsDisabled = sessionStorage.getItem('scp_gps_disabled') === '1';
+
+        if (!hasGpsInUrl && selectedSort === 'nearest' && !gpsDisabled) {
+            const savedLat = sessionStorage.getItem('scp_gps_lat');
+            const savedLng = sessionStorage.getItem('scp_gps_lng');
+            if (savedLat && savedLng) {
+                applyGPSCoordinates(savedLat, savedLng);
+            } else {
+                requestUserGPS(false);
+            }
+        }
+    });
+</script>
 {% endblock %}

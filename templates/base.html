@@ -76,6 +76,7 @@
 
         /* Cards & Badges */
         .pub-card {
+            position: relative;
             background: var(--pub-card-bg);
             border: 1px solid var(--pub-border);
             border-radius: 0.85rem;
@@ -153,13 +154,20 @@
                             <i class="fa-solid fa-pen-nib me-1 text-warning"></i>Write a Review
                         </a>
                     </li>
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link text-light fw-medium" href="{% url 'reviews:passport' user.username %}">
+                            <i class="fa-solid fa-passport me-1 text-warning"></i>My Pint Passport
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
 
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
-                        <span class="text-light small me-2 d-none d-md-inline">
-                            <i class="fa-regular fa-circle-user text-warning me-1"></i><strong>{{ user.username }}</strong>
-                        </span>
+                        <a href="{% url 'reviews:passport' user.username %}" class="text-light text-decoration-none small me-2 d-none d-md-inline" title="View your Pint Passport">
+                            <i class="fa-solid fa-passport text-warning me-1"></i><strong>{{ user.username }}</strong>
+                        </a>
                         <a href="{% url 'reviews:create' %}" class="btn btn-amber btn-sm px-3">
                             <i class="fa-solid fa-plus me-1"></i>New Review
                         </a>
