@@ -364,6 +364,23 @@ class PubReview(models.Model):
     def image_url(self):
         return self.featured_image or self.DEFAULT_IMAGE_URL
 
+    @property
+    def card_image_url(self):
+        url = self.image_url
+        if "images.unsplash.com/" in url:
+            return (
+                url.replace("w=1200&q=80", "w=500&q=75&fm=webp")
+                .replace("w=1600&q=80", "w=500&q=75&fm=webp")
+            )
+        prefix = "https://upload.wikimedia.org/wikipedia/commons/"
+        if url.startswith(prefix) and "/thumb/" not in url:
+            rest = url[len(prefix):]
+            parts = rest.split("/")
+            if len(parts) == 3 and parts[2].lower().endswith((".jpg", ".jpeg", ".png")):
+                filename = parts[2]
+                return f"{prefix}thumb/{rest}/500px-{filename}"
+        return url
+
     def get_absolute_url(self):
         return reverse("reviews:detail", kwargs={"slug": self.slug})
 

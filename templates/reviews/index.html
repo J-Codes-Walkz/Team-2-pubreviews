@@ -154,13 +154,14 @@
                 <div class="position-relative">
                     <a href="{{ review.get_absolute_url }}" aria-label="View {{ review.pub_name }} in {{ review.get_brum_area_display }}">
                         <img
-                            src="{{ review.image_url }}"
+                            src="{{ review.card_image_url }}"
+                            data-orig="{{ review.image_url }}"
                             alt="{{ review.pub_name }} in {{ review.get_brum_area_display }}"
                             class="pub-card-img"
                             width="400"
                             height="215"
-                            {% if forloop.counter <= 3 %}fetchpriority="high"{% else %}loading="lazy" decoding="async"{% endif %}
-                            onerror="this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';"
+                            {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy" decoding="async"{% endif %}
+                            onerror="if(this.dataset.orig && this.src!==this.dataset.orig){this.src=this.dataset.orig;}else{this.onerror=null;this.src='{{ review.DEFAULT_IMAGE_URL }}';}"
                         >
                     </a>
                     <!-- Birmingham Area Pill Badge (Truncated cleanly so it never collides with price badge) -->
