@@ -257,6 +257,7 @@ class SecurityAndValidationTests(TestCase):
         real_png = SimpleUploadedFile(
             "pint.png", VALID_PNG_BYTES, content_type="image/png"
         )
+        original_card_image = self.published_review.image_url
         self.client.post(
             reverse("reviews:add_comment", kwargs={"slug": self.published_review.slug}),
             {
@@ -270,6 +271,10 @@ class SecurityAndValidationTests(TestCase):
             },
         )
         self.assertEqual(Comment.objects.count(), 1)
+        self.published_review.refresh_from_db()
+        # Pub card image must remain the pub's own featured_image, while gallery_photos includes the upload
+        self.assertEqual(self.published_review.image_url, original_card_image)
+        self.assertEqual(len(self.published_review.gallery_photos), 1)
 
     def test_negative_or_excessive_pint_price_rejected(self):
         self.client.login(username="alice_brum", password="StrongPassword123!")

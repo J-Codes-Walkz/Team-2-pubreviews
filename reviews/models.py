@@ -362,17 +362,6 @@ class PubReview(models.Model):
 
     @property
     def image_url(self):
-        if self.uploaded_image:
-            try:
-                return self.uploaded_image.url
-            except ValueError:
-                pass
-        for c in self._get_approved_comments():
-            if c.uploaded_image:
-                try:
-                    return c.uploaded_image.url
-                except ValueError:
-                    pass
         return self.featured_image or self.DEFAULT_IMAGE_URL
 
     def get_absolute_url(self):

@@ -348,13 +348,9 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
             if form.instance.longitude is None and existing_pub.longitude is not None:
                 form.instance.longitude = existing_pub.longitude
             if (
-                not form.instance.uploaded_image
-                and (
-                    not form.instance.featured_image
-                    or form.instance.featured_image == PubReview.DEFAULT_IMAGE_URL
-                )
-                and existing_pub.featured_image
-            ):
+                not form.instance.featured_image
+                or form.instance.featured_image == PubReview.DEFAULT_IMAGE_URL
+            ) and existing_pub.featured_image:
                 form.instance.featured_image = existing_pub.featured_image
 
         # Find any unreviewed directory placeholder(s) for this same pub so we can
