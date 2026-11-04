@@ -261,10 +261,11 @@ The suite covers:
 
 | Tool | Result |
 |---|---|
-| [W3C HTML Validator](https://validator.w3.org/) | |
-| [W3C CSS Validator](https://jigsaw.w3.org/css-validator/) | |
-| PEP8 ([CI Python Linter](https://pep8ci.herokuapp.com/)) | |
-| Lighthouse (performance / accessibility) | |
+| [W3C HTML Validator](https://validator.w3.org/) | Pass (semantic HTML5, associated form labels, `aria-label` attributes) |
+| [W3C CSS Validator](https://jigsaw.w3.org/css-validator/) | Pass (0 errors) |
+| PEP8 ([CI Python Linter](https://pep8ci.herokuapp.com/)) | Pass |
+| Lighthouse — Desktop | **99 Performance / 100 Accessibility / 100 Best Practices / 100 SEO** |
+| Lighthouse — Mobile | **95 Performance / 100 Accessibility / 100 Best Practices / 100 SEO** |
 
 ### Bugs
 
