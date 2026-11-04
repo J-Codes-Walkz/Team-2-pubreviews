@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator,
+    FileExtensionValidator,
+)
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -26,15 +30,37 @@ class Category(models.Model):
 class PubReview(models.Model):
     class BrumArea(models.TextChoices):
         CITY_CENTRE = "CITY_CENTRE", "City Centre"
-        DIGBETH = "DIGBETH", "Digbeth"
-        JEWELLERY_QUARTER = "JEWELLERY_QUARTER", "Jewellery Quarter"
+        DIGBETH = "DIGBETH", "Digbeth & Deritend"
+        JEWELLERY_QUARTER = "JEWELLERY_QUARTER", "Jewellery Quarter & Hockley"
+        BRINDLEYPLACE = "BRINDLEYPLACE", "Brindleyplace & Broad Street"
+        CHINATOWN_GAY_VILLAGE = "CHINATOWN_GAY_VILLAGE", "Chinatown, Gay Village & Southside"
+        GUN_QUARTER = "GUN_QUARTER", "Gun Quarter & Snow Hill"
         HARBORNE = "HARBORNE", "Harborne"
         MOSELEY = "MOSELEY", "Moseley"
         STIRCHLEY = "STIRCHLEY", "Stirchley"
         KINGS_HEATH = "KINGS_HEATH", "Kings Heath"
-        ASTON = "ASTON", "Aston"
         EDGBASTON = "EDGBASTON", "Edgbaston"
-        BOURNVILLE = "BOURNVILLE", "Bournville"
+        SELLY_OAK = "SELLY_OAK", "Selly Oak"
+        BOURNVILLE = "BOURNVILLE", "Bournville & Cotteridge"
+        ASTON = "ASTON", "Aston & Witton"
+        SUTTON_COLDFIELD = "SUTTON_COLDFIELD", "Sutton Coldfield"
+        ERDINGTON = "ERDINGTON", "Erdington"
+        NORTHFIELD = "NORTHFIELD", "Northfield"
+        KINGS_NORTON = "KINGS_NORTON", "Kings Norton"
+        LONGBRIDGE_RUBERY = "LONGBRIDGE_RUBERY", "Longbridge, Rednal & Rubery"
+        QUINTON = "QUINTON", "Quinton, Bartley Green & Woodgate"
+        LADYWOOD = "LADYWOOD", "Ladywood & Five Ways"
+        HANDSWORTH = "HANDSWORTH", "Handsworth & Lozells"
+        PERRY_BARR = "PERRY_BARR", "Perry Barr, Great Barr & Kingstanding"
+        BALSALL_HEATH = "BALSALL_HEATH", "Balsall Heath & Highgate"
+        SPARKHILL = "SPARKHILL", "Sparkhill, Sparkbrook & Tyseley"
+        HALL_GREEN = "HALL_GREEN", "Hall Green"
+        ACOCKS_GREEN = "ACOCKS_GREEN", "Acocks Green"
+        SHELDON_YARDLEY = "SHELDON_YARDLEY", "Sheldon, Yardley & Stechford"
+        CASTLE_BROMWICH = "CASTLE_BROMWICH", "Castle Bromwich, Hodge Hill & Shard End"
+        BORDESLEY_GREEN = "BORDESLEY_GREEN", "Bordesley Green & Small Heath"
+        ALUM_ROCK = "ALUM_ROCK", "Alum Rock & Saltley"
+        NECHELLS = "NECHELLS", "Nechells & Duddeston"
 
     class PricePoint(models.TextChoices):
         BARGAIN = "£", "£ (Bargain pint)"
@@ -66,6 +92,18 @@ class PubReview(models.Model):
         default=BrumArea.CITY_CENTRE,
         db_index=True,
     )
+    address = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Street address in Birmingham (e.g., 75-77 Upper Dean St)",
+    )
+    postcode = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Birmingham postcode (e.g., B5 4SG)",
+    )
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -98,6 +136,22 @@ class PubReview(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
     )
 
+    # What's On Tap & Pint Price Tracker
+    pint_ordered = models.CharField(
+        "Pint Ordered (On Tap)",
+        max_length=100,
+        blank=True,
+        help_text="e.g., Bathams Best Bitter, Attic Intuition Pale, Guinness",
+    )
+    pint_price = models.DecimalField(
+        "Price Paid (£)",
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price paid for a pint in £ (e.g., 4.50)",
+    )
+
     content = models.TextField(help_text="Share the full story of your visit, the keep of the ale, and the vibe.")
     excerpt = models.CharField(
         max_length=220,
@@ -110,6 +164,18 @@ class PubReview(models.Model):
         default=DEFAULT_IMAGE_URL,
         help_text="Direct URL to a photo of the pub or pint (leave blank for default pub image).",
     )
+    uploaded_image = models.FileField(
+        "Upload a Photo",
+        upload_to="pub_photos/",
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["jpg", "jpeg", "png", "webp", "gif"]
+            )
+        ],
+        help_text="Upload your own photo of the pub or your pint (JPG, PNG, WEBP, GIF).",
+    )
     status = models.IntegerField(
         choices=Status.choices,
         default=Status.PUBLISHED,
@@ -118,6 +184,11 @@ class PubReview(models.Model):
     likes = models.ManyToManyField(
         User,
         related_name="review_likes",
+        blank=True,
+    )
+    bookmarks = models.ManyToManyField(
+        User,
+        related_name="bookmarked_reviews",
         blank=True,
     )
     created_on = models.DateTimeField(auto_now_add=True)
@@ -145,19 +216,156 @@ class PubReview(models.Model):
 
         super().save(*args, **kwargs)
 
+    def _get_approved_comments(self):
+        if "_prefetched_objects_cache" in self.__dict__ and "comments" in self._prefetched_objects_cache:
+            return [c for c in self._prefetched_objects_cache["comments"] if c.approved]
+        return list(self.comments.filter(approved=True).select_related("author"))
+
+    @property
+    def has_community_reviews(self):
+        if self.author.username != "pub_directory":
+            return True
+        return len(self._get_approved_comments()) > 0
+
+    @property
+    def community_review_count(self):
+        base = 1 if self.author.username != "pub_directory" else 0
+        return base + len(self._get_approved_comments())
+
+    @property
+    def avg_pint_quality(self):
+        scores = []
+        if self.author.username != "pub_directory":
+            scores.append(self.pint_quality_rating)
+        for c in self._get_approved_comments():
+            if c.pint_quality_rating:
+                scores.append(c.pint_quality_rating)
+        return round(sum(scores) / len(scores), 1) if scores else float(self.pint_quality_rating)
+
+    @property
+    def avg_atmosphere(self):
+        scores = []
+        if self.author.username != "pub_directory":
+            scores.append(self.atmosphere_rating)
+        for c in self._get_approved_comments():
+            if c.atmosphere_rating:
+                scores.append(c.atmosphere_rating)
+        return round(sum(scores) / len(scores), 1) if scores else float(self.atmosphere_rating)
+
+    @property
+    def avg_value(self):
+        scores = []
+        if self.author.username != "pub_directory":
+            scores.append(self.value_rating)
+        for c in self._get_approved_comments():
+            if c.value_rating:
+                scores.append(c.value_rating)
+        return round(sum(scores) / len(scores), 1) if scores else float(self.value_rating)
+
     @property
     def overall_rating(self):
-        return round(
-            (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3,
-            1,
-        )
+        scores = []
+        if self.author.username != "pub_directory":
+            scores.append(
+                (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0
+            )
+        for c in self._get_approved_comments():
+            if c.pint_quality_rating and c.atmosphere_rating and c.value_rating:
+                scores.append(
+                    (c.pint_quality_rating + c.atmosphere_rating + c.value_rating) / 3.0
+                )
+        if not scores:
+            return round(
+                (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0,
+                1,
+            )
+        return round(sum(scores) / len(scores), 1)
+
+    @property
+    def avg_pint_price(self):
+        prices = []
+        if self.pint_price is not None:
+            prices.append(float(self.pint_price))
+        for c in self._get_approved_comments():
+            if c.pint_price is not None:
+                prices.append(float(c.pint_price))
+        return round(sum(prices) / len(prices), 2) if prices else None
+
+    @property
+    def reported_pints(self):
+        items = []
+        if self.pint_ordered or self.pint_price is not None:
+            items.append(
+                {
+                    "pint": self.pint_ordered or "House Pint",
+                    "price": self.pint_price,
+                    "author": self.author.username,
+                    "date": self.created_on,
+                }
+            )
+        for c in self._get_approved_comments():
+            if c.pint_ordered or c.pint_price is not None:
+                items.append(
+                    {
+                        "pint": c.pint_ordered or "House Pint",
+                        "price": c.pint_price,
+                        "author": c.author.username,
+                        "date": c.created_on,
+                    }
+                )
+        return items
+
+    @property
+    def gallery_photos(self):
+        photos = []
+        if self.uploaded_image:
+            try:
+                photos.append(
+                    {
+                        "url": self.uploaded_image.url,
+                        "author": self.author.username,
+                        "caption": self.pint_ordered or self.title,
+                        "date": self.created_on,
+                    }
+                )
+            except ValueError:
+                pass
+        for c in self._get_approved_comments():
+            if c.uploaded_image:
+                try:
+                    photos.append(
+                        {
+                            "url": c.uploaded_image.url,
+                            "author": c.author.username,
+                            "caption": c.pint_ordered or c.body[:60],
+                            "date": c.created_on,
+                        }
+                    )
+                except ValueError:
+                    pass
+        return photos
 
     @property
     def total_likes(self):
         return self.likes.count()
 
     @property
+    def total_bookmarks(self):
+        return self.bookmarks.count()
+
+    @property
     def image_url(self):
+        if self.uploaded_image:
+            try:
+                return self.uploaded_image.url
+            except ValueError:
+                pass
+        for c in self._get_approved_comments():
+            if c.uploaded_image:
+                try:
+                    return c.uploaded_image.url
+                except ValueError:
+                    pass
         return self.featured_image or self.DEFAULT_IMAGE_URL
 
     def get_absolute_url(self):
@@ -178,12 +386,54 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name="pub_comments",
     )
+    pint_quality_rating = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    atmosphere_rating = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    value_rating = models.PositiveSmallIntegerField(
+        default=4,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    pint_ordered = models.CharField(
+        "Pint Ordered (Optional)",
+        max_length=100,
+        blank=True,
+    )
+    pint_price = models.DecimalField(
+        "Price Paid (£)",
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    uploaded_image = models.FileField(
+        "Upload a Photo (Optional)",
+        upload_to="pub_photos/",
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=["jpg", "jpeg", "png", "webp", "gif"]
+            )
+        ],
+    )
     body = models.TextField(max_length=1000)
     approved = models.BooleanField(default=True)
     created_on = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["created_on"]
+        ordering = ["-created_on"]
+
+    @property
+    def overall_rating(self):
+        return round(
+            (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0,
+            1,
+        )
 
     def __str__(self):
-        return f"Comment by {self.author.username} on {self.review.pub_name}"
+        return f"Review by {self.author.username} on {self.review.pub_name}"

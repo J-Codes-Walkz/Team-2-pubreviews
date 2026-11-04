@@ -36,10 +36,14 @@ class PubReviewForm(forms.ModelForm):
             "pub_name",
             "category",
             "brum_area",
+            "address",
+            "postcode",
             "price_point",
             "pint_quality_rating",
             "atmosphere_rating",
             "value_rating",
+            "pint_ordered",
+            "pint_price",
             "serves_cask_ale",
             "serves_cobs_or_food",
             "has_beer_garden",
@@ -47,6 +51,7 @@ class PubReviewForm(forms.ModelForm):
             "shows_live_sports",
             "excerpt",
             "content",
+            "uploaded_image",
             "featured_image",
             "status",
         ]
@@ -54,33 +59,65 @@ class PubReviewForm(forms.ModelForm):
             "title": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "e.g., Unbeatable Bathams and Stained Glass Splendour",
+                    "placeholder": "e.g., Cracking Pint of Bathams and Friendly Regulars",
                 }
             ),
             "pub_name": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "e.g., The Craven Arms"}
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "Start typing a Birmingham pub name (e.g., The Craven Arms)...",
+                    "list": "birmingham-pubs-datalist",
+                    "autocomplete": "off",
+                }
             ),
             "category": forms.Select(attrs={"class": "form-select"}),
             "brum_area": forms.Select(attrs={"class": "form-select"}),
+            "address": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "e.g., 75-77 Upper Dean St"}
+            ),
+            "postcode": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "e.g., B5 4SG"}
+            ),
             "price_point": forms.Select(attrs={"class": "form-select"}),
+            "pint_ordered": forms.TextInput(
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "e.g., Bathams Best Bitter, Attic Intuition, Guinness",
+                }
+            ),
+            "pint_price": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.05",
+                    "min": "1.00",
+                    "max": "20.00",
+                    "placeholder": "e.g., 4.50",
+                }
+            ),
             "excerpt": forms.TextInput(
                 attrs={
                     "class": "form-control",
                     "maxlength": "220",
-                    "placeholder": "One-sentence hook for the homepage card (optional — auto-generated if blank)",
+                    "placeholder": "One-sentence summary for the pub card (optional — auto-generated if left blank)",
                 }
             ),
             "content": forms.Textarea(
                 attrs={
                     "class": "form-control",
-                    "rows": 7,
-                    "placeholder": "Tell fellow Brummies about the pint, the cobs, the carpet, and the crowd...",
+                    "rows": 6,
+                    "placeholder": "Tell fellow Brummies about the pint quality, atmosphere, price, and cobs...",
+                }
+            ),
+            "uploaded_image": forms.ClearableFileInput(
+                attrs={
+                    "class": "form-control",
+                    "accept": "image/*",
                 }
             ),
             "featured_image": forms.URLInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "https://images.unsplash.com/...",
+                    "placeholder": "https://... (optional if uploading a photo above)",
                 }
             ),
             "status": forms.Select(attrs={"class": "form-select"}),
@@ -93,18 +130,76 @@ class PubReviewForm(forms.ModelForm):
 
 
 class CommentForm(forms.ModelForm):
+    RATING_CHOICES = [(i, f"{i} / 5 ⭐") for i in range(5, 0, -1)]
+
+    pint_quality_rating = forms.TypedChoiceField(
+        choices=RATING_CHOICES,
+        coerce=int,
+        initial=5,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        label="🍺 Pint Quality",
+    )
+    atmosphere_rating = forms.TypedChoiceField(
+        choices=RATING_CHOICES,
+        coerce=int,
+        initial=5,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        label="🔥 Atmosphere",
+    )
+    value_rating = forms.TypedChoiceField(
+        choices=RATING_CHOICES,
+        coerce=int,
+        initial=4,
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        label="💷 Value",
+    )
+
     class Meta:
         model = Comment
-        fields = ["body"]
-        labels = {"body": "Add your thoughts or pint recommendation"}
+        fields = [
+            "pint_quality_rating",
+            "atmosphere_rating",
+            "value_rating",
+            "pint_ordered",
+            "pint_price",
+            "uploaded_image",
+            "body",
+        ]
+        labels = {
+            "body": "Your Review & Pint Notes *",
+            "pint_ordered": "🍺 Pint Ordered (What's on Tap?)",
+            "pint_price": "💷 Price Paid (£)",
+            "uploaded_image": "📸 Upload a Photo of Your Pint or the Pub",
+        }
         widgets = {
+            "pint_ordered": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "placeholder": "e.g., Bathams Best Bitter, Intuition Pale, Guinness...",
+                }
+            ),
+            "pint_price": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "step": "0.05",
+                    "min": "1.00",
+                    "max": "20.00",
+                    "placeholder": "e.g., 4.50",
+                }
+            ),
+            "uploaded_image": forms.ClearableFileInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "accept": "image/*",
+                }
+            ),
             "body": forms.Textarea(
                 attrs={
                     "class": "form-control",
                     "rows": 3,
-                    "placeholder": "Had a pint here recently? Share your thoughts on the tap list or cobs...",
+                    "placeholder": "Share how the pint kept, what's on the hand-pulls, the cobs, and the vibe...",
                 }
-            )
+            ),
         }
 
 
