@@ -1,0 +1,48 @@
+# Runs on every pull request and every push to main. Heroku's automatic deploy
+# waits for this to pass ("Wait for CI to pass"), so a failing test blocks a deploy.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  django-tests:
+    name: Django tests and checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Django system check
+        run: python manage.py check
+
+      - name: No missing migrations
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Pub data loads into a fresh database
+        run: |
+          python manage.py migrate --noinput
+          python manage.py loaddata birmingham_pubs
+
+      - name: Automated tests
+        run: python manage.py test --verbosity 2
+
+      - name: Production security check
+        # Throwaway values: DYNO makes the settings behave as on Heroku.
+        run: |
+          export DYNO=ci DJANGO_ALLOWED_HOSTS=example.herokuapp.com
+          export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          python manage.py check --deploy --fail-level WARNING
