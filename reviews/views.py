@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import (
     ListView,
@@ -434,7 +435,11 @@ class ToggleBookmarkView(LoginRequiredMixin, View):
                 f"Saved {review.pub_name} to your 'Want to Visit' Pint Passport! 🗺️",
             )
         next_url = request.POST.get("next")
-        if next_url:
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
             return redirect(next_url)
         return redirect(f"{reverse('reviews:detail', kwargs={'slug': slug})}#engagement-bar")
 

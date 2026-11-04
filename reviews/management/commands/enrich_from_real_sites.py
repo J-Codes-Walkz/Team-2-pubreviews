@@ -100,8 +100,9 @@ def haversine_miles(lat1, lon1, lat2, lon2):
 def strip_html(text):
     if not text:
         return ""
-    text = re.sub(r"<script[\s\S]*?</script>", " ", text, flags=re.IGNORECASE)
-    text = re.sub(r"<style[\s\S]*?</style>", " ", text, flags=re.IGNORECASE)
+    # Match closing tags with optional whitespace/attributes, e.g. "</script >".
+    text = re.sub(r"<script\b[\s\S]*?</script\b[^>]*>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<style\b[\s\S]*?</style\b[^>]*>", " ", text, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", " ", text)
     text = html.unescape(text)
     text = re.sub(r"\s+", " ", text).strip()
