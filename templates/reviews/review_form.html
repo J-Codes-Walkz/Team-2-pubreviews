@@ -32,7 +32,7 @@
                     <div id="autofill-pub-banner" class="p-3 p-md-4 mb-4 rounded-4 border {% if not source_pub and not object %}d-none{% endif %}" style="background-color: #faf6ee; border-color: var(--pub-border) !important;">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                             <div class="d-flex align-items-center gap-3">
-                                <img id="banner-pub-img" src="{% if object %}{{ object.image_url }}{% elif source_pub %}{{ source_pub.image_url }}{% endif %}" alt="Pub preview" class="rounded-3 shadow-sm" style="width: 84px; height: 68px; object-fit: cover;">
+                                <img id="banner-pub-img" src="{% if object %}{{ object.image_url }}{% elif source_pub %}{{ source_pub.image_url }}{% else %}https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=80{% endif %}" alt="Pub preview" class="rounded-3 shadow-sm" style="width: 84px; height: 68px; object-fit: cover;">
                                 <div>
                                     <span class="badge bg-success mb-1"><i class="fa-solid fa-wand-magic-sparkles me-1"></i>Pub Details Auto-Filled</span>
                                     <h2 id="banner-pub-name" class="h5 fw-bold mb-0 text-dark">

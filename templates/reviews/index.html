@@ -199,7 +199,7 @@
                             {% if not review.has_community_reviews %}
                                 <span class="badge bg-light text-dark border">No reviews yet</span>
                             {% else %}
-                                <div aria-label="Rated {{ review.overall_rating }} out of 5 stars">
+                                <div role="img" aria-label="Rated {{ review.overall_rating }} out of 5 stars">
                                     {% for i in "12345" %}
                                         {% if forloop.counter <= review.overall_rating %}
                                             <i class="fa-solid fa-star star-filled" aria-hidden="true"></i>

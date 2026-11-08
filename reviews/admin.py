@@ -39,7 +39,13 @@ class PubReviewAdmin(admin.ModelAdmin):
         "is_dog_friendly",
         "serves_cobs_or_food",
     )
-    search_fields = ("pub_name", "title", "content", "pint_ordered", "author__username")
+    search_fields = (
+        "pub_name",
+        "title",
+        "content",
+        "pint_ordered",
+        "author__username",
+    )
     prepopulated_fields = {"slug": ("pub_name", "title")}
     inlines = [CommentInline]
 
@@ -56,7 +62,12 @@ class CommentAdmin(admin.ModelAdmin):
         "created_on",
     )
     list_filter = ("approved", "created_on")
-    search_fields = ("author__username", "body", "pint_ordered", "review__pub_name")
+    search_fields = (
+        "author__username",
+        "body",
+        "pint_ordered",
+        "review__pub_name",
+    )
     actions = ["approve_comments"]
 
     @admin.action(description="Approve selected comments")

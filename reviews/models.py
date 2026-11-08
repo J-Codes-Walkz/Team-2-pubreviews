@@ -36,7 +36,10 @@ class PubReview(models.Model):
         DIGBETH = "DIGBETH", "Digbeth & Deritend"
         JEWELLERY_QUARTER = "JEWELLERY_QUARTER", "Jewellery Quarter & Hockley"
         BRINDLEYPLACE = "BRINDLEYPLACE", "Brindleyplace & Broad Street"
-        CHINATOWN_GAY_VILLAGE = "CHINATOWN_GAY_VILLAGE", "Chinatown, Gay Village & Southside"
+        CHINATOWN_GAY_VILLAGE = (
+            "CHINATOWN_GAY_VILLAGE",
+            "Chinatown, Gay Village & Southside",
+        )
         GUN_QUARTER = "GUN_QUARTER", "Gun Quarter & Snow Hill"
         HARBORNE = "HARBORNE", "Harborne"
         MOSELEY = "MOSELEY", "Moseley"
@@ -60,7 +63,10 @@ class PubReview(models.Model):
         HALL_GREEN = "HALL_GREEN", "Hall Green"
         ACOCKS_GREEN = "ACOCKS_GREEN", "Acocks Green"
         SHELDON_YARDLEY = "SHELDON_YARDLEY", "Sheldon, Yardley & Stechford"
-        CASTLE_BROMWICH = "CASTLE_BROMWICH", "Castle Bromwich, Hodge Hill & Shard End"
+        CASTLE_BROMWICH = (
+            "CASTLE_BROMWICH",
+            "Castle Bromwich, Hodge Hill & Shard End",
+        )
         BORDESLEY_GREEN = "BORDESLEY_GREEN", "Bordesley Green & Small Heath"
         ALUM_ROCK = "ALUM_ROCK", "Alum Rock & Saltley"
         NECHELLS = "NECHELLS", "Nechells & Duddeston"
@@ -159,7 +165,12 @@ class PubReview(models.Model):
         help_text="Price paid for a pint in £ (e.g., 4.50)",
     )
 
-    content = models.TextField(help_text="Share the full story of your visit, the keep of the ale, and the vibe.")
+    content = models.TextField(
+        help_text=(
+            "Share the full story of your visit, the keep of the ale, and the"
+            " vibe."
+        )
+    )
     excerpt = models.CharField(
         max_length=220,
         blank=True,
@@ -170,7 +181,10 @@ class PubReview(models.Model):
         blank=True,
         default=DEFAULT_IMAGE_URL,
         validators=[URLValidator(schemes=["http", "https"])],
-        help_text="Direct URL to a photo of the pub or pint (leave blank for default pub image).",
+        help_text=(
+            "Direct URL to a photo of the pub or pint (leave blank for default"
+            " pub image)."
+        ),
     )
     uploaded_image = models.FileField(
         "Upload a Photo",
@@ -182,7 +196,10 @@ class PubReview(models.Model):
                 allowed_extensions=["jpg", "jpeg", "png", "webp", "gif"]
             )
         ],
-        help_text="Upload your own photo of the pub or your pint (JPG, PNG, WEBP, GIF).",
+        help_text=(
+            "Upload your own photo of the pub or your pint (JPG, PNG, WEBP,"
+            " GIF)."
+        ),
     )
     status = models.IntegerField(
         choices=Status.choices,
@@ -210,7 +227,11 @@ class PubReview(models.Model):
             base_slug = slugify(f"{self.pub_name}-{self.title}")[:200]
             slug_candidate = base_slug
             counter = 1
-            while PubReview.objects.filter(slug=slug_candidate).exclude(pk=self.pk).exists():
+            while (
+                PubReview.objects.filter(slug=slug_candidate)
+                .exclude(pk=self.pk)
+                .exists()
+            ):
                 slug_candidate = f"{base_slug}-{counter}"
                 counter += 1
             self.slug = slug_candidate
@@ -225,9 +246,18 @@ class PubReview(models.Model):
         super().save(*args, **kwargs)
 
     def _get_approved_comments(self):
-        if "_prefetched_objects_cache" in self.__dict__ and "comments" in self._prefetched_objects_cache:
-            return [c for c in self._prefetched_objects_cache["comments"] if c.approved]
-        return list(self.comments.filter(approved=True).select_related("author"))
+        if (
+            "_prefetched_objects_cache" in self.__dict__
+            and "comments" in self._prefetched_objects_cache
+        ):
+            return [
+                c
+                for c in self._prefetched_objects_cache["comments"]
+                if c.approved
+            ]
+        return list(
+            self.comments.filter(approved=True).select_related("author")
+        )
 
     @property
     def has_community_reviews(self):
@@ -248,7 +278,11 @@ class PubReview(models.Model):
         for c in self._get_approved_comments():
             if c.pint_quality_rating:
                 scores.append(c.pint_quality_rating)
-        return round(sum(scores) / len(scores), 1) if scores else float(self.pint_quality_rating)
+        return (
+            round(sum(scores) / len(scores), 1)
+            if scores
+            else float(self.pint_quality_rating)
+        )
 
     @property
     def avg_atmosphere(self):
@@ -258,7 +292,11 @@ class PubReview(models.Model):
         for c in self._get_approved_comments():
             if c.atmosphere_rating:
                 scores.append(c.atmosphere_rating)
-        return round(sum(scores) / len(scores), 1) if scores else float(self.atmosphere_rating)
+        return (
+            round(sum(scores) / len(scores), 1)
+            if scores
+            else float(self.atmosphere_rating)
+        )
 
     @property
     def avg_value(self):
@@ -268,23 +306,46 @@ class PubReview(models.Model):
         for c in self._get_approved_comments():
             if c.value_rating:
                 scores.append(c.value_rating)
-        return round(sum(scores) / len(scores), 1) if scores else float(self.value_rating)
+        return (
+            round(sum(scores) / len(scores), 1)
+            if scores
+            else float(self.value_rating)
+        )
 
     @property
     def overall_rating(self):
         scores = []
         if self.author.username != "pub_directory":
             scores.append(
-                (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0
+                (
+                    self.pint_quality_rating
+                    + self.atmosphere_rating
+                    + self.value_rating
+                )
+                / 3.0
             )
         for c in self._get_approved_comments():
-            if c.pint_quality_rating and c.atmosphere_rating and c.value_rating:
+            if (
+                c.pint_quality_rating
+                and c.atmosphere_rating
+                and c.value_rating
+            ):
                 scores.append(
-                    (c.pint_quality_rating + c.atmosphere_rating + c.value_rating) / 3.0
+                    (
+                        c.pint_quality_rating
+                        + c.atmosphere_rating
+                        + c.value_rating
+                    )
+                    / 3.0
                 )
         if not scores:
             return round(
-                (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0,
+                (
+                    self.pint_quality_rating
+                    + self.atmosphere_rating
+                    + self.value_rating
+                )
+                / 3.0,
                 1,
             )
         return round(sum(scores) / len(scores), 1)
@@ -303,24 +364,20 @@ class PubReview(models.Model):
     def reported_pints(self):
         items = []
         if self.pint_ordered or self.pint_price is not None:
-            items.append(
-                {
-                    "pint": self.pint_ordered or "House Pint",
-                    "price": self.pint_price,
-                    "author": self.author.username,
-                    "date": self.created_on,
-                }
-            )
+            items.append({
+                "pint": self.pint_ordered or "House Pint",
+                "price": self.pint_price,
+                "author": self.author.username,
+                "date": self.created_on,
+            })
         for c in self._get_approved_comments():
             if c.pint_ordered or c.pint_price is not None:
-                items.append(
-                    {
-                        "pint": c.pint_ordered or "House Pint",
-                        "price": c.pint_price,
-                        "author": c.author.username,
-                        "date": c.created_on,
-                    }
-                )
+                items.append({
+                    "pint": c.pint_ordered or "House Pint",
+                    "price": c.pint_price,
+                    "author": c.author.username,
+                    "date": c.created_on,
+                })
         return items
 
     @property
@@ -328,27 +385,23 @@ class PubReview(models.Model):
         photos = []
         if self.uploaded_image:
             try:
-                photos.append(
-                    {
-                        "url": self.uploaded_image.url,
-                        "author": self.author.username,
-                        "caption": self.pint_ordered or self.title,
-                        "date": self.created_on,
-                    }
-                )
+                photos.append({
+                    "url": self.uploaded_image.url,
+                    "author": self.author.username,
+                    "caption": self.pint_ordered or self.title,
+                    "date": self.created_on,
+                })
             except ValueError:
                 pass
         for c in self._get_approved_comments():
             if c.uploaded_image:
                 try:
-                    photos.append(
-                        {
-                            "url": c.uploaded_image.url,
-                            "author": c.author.username,
-                            "caption": c.pint_ordered or c.body[:60],
-                            "date": c.created_on,
-                        }
-                    )
+                    photos.append({
+                        "url": c.uploaded_image.url,
+                        "author": c.author.username,
+                        "caption": c.pint_ordered or c.body[:60],
+                        "date": c.created_on,
+                    })
                 except ValueError:
                     pass
         return photos
@@ -369,15 +422,16 @@ class PubReview(models.Model):
     def card_image_url(self):
         url = self.image_url
         if urlparse(url).hostname == "images.unsplash.com":
-            return (
-                url.replace("w=1200&q=80", "w=500&q=75&fm=webp")
-                .replace("w=1600&q=80", "w=500&q=75&fm=webp")
+            return url.replace("w=1200&q=80", "w=500&q=75&fm=webp").replace(
+                "w=1600&q=80", "w=500&q=75&fm=webp"
             )
         prefix = "https://upload.wikimedia.org/wikipedia/commons/"
         if url.startswith(prefix) and "/thumb/" not in url:
-            rest = url[len(prefix):]
+            rest = url.removeprefix(prefix)
             parts = rest.split("/")
-            if len(parts) == 3 and parts[2].lower().endswith((".jpg", ".jpeg", ".png")):
+            if len(parts) == 3 and parts[2].lower().endswith(
+                (".jpg", ".jpeg", ".png")
+            ):
                 filename = parts[2]
                 return f"{prefix}thumb/{rest}/500px-{filename}"
         return url
@@ -386,7 +440,9 @@ class PubReview(models.Model):
         return reverse("reviews:detail", kwargs={"slug": self.slug})
 
     def __str__(self):
-        return f"{self.pub_name} ({self.get_brum_area_display()}) — {self.title}"
+        return (
+            f"{self.pub_name} ({self.get_brum_area_display()}) — {self.title}"
+        )
 
 
 class Comment(models.Model):
@@ -449,7 +505,12 @@ class Comment(models.Model):
     @property
     def overall_rating(self):
         return round(
-            (self.pint_quality_rating + self.atmosphere_rating + self.value_rating) / 3.0,
+            (
+                self.pint_quality_rating
+                + self.atmosphere_rating
+                + self.value_rating
+            )
+            / 3.0,
             1,
         )
 

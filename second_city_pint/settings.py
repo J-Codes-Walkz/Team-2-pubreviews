@@ -8,10 +8,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEV_SECRET_KEY = "django-insecure-brum-second-city-pint-dev-key-change-in-prod"
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", DEV_SECRET_KEY)
 
-# Debug defaults to on locally but off on Heroku (which sets DYNO on every dyno),
+# Debug defaults to on locally but off on Heroku (which sets DYNO on every
+# dyno),
 # so a missing config var can never put the live site into debug mode.
 ON_HEROKU = "DYNO" in os.environ
-DEBUG = os.environ.get("DJANGO_DEBUG", "False" if ON_HEROKU else "True").lower() in (
+DEBUG = os.environ.get(
+    "DJANGO_DEBUG", "False" if ON_HEROKU else "True"
+).lower() in (
     "true",
     "1",
     "yes",
@@ -19,11 +22,15 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "False" if ON_HEROKU else "True").lower()
 
 # Fail safe: never run the live site with the public development key.
 if not DEBUG and SECRET_KEY == DEV_SECRET_KEY:
-    raise ImproperlyConfigured("Set the DJANGO_SECRET_KEY config var before running with DEBUG off.")
+    raise ImproperlyConfigured(
+        "Set the DJANGO_SECRET_KEY config var before running with DEBUG off."
+    )
 
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    for h in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost"
+    ).split(",")
     if h.strip()
 ]
 
@@ -66,6 +73,7 @@ MIDDLEWARE = [
 # Enable WhiteNoise if installed
 try:
     import whitenoise  # noqa: F401
+
     MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 except ImportError:
     pass
@@ -90,7 +98,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "second_city_pint.wsgi.application"
 
-# Database: Defaults to SQLite locally, supports DATABASE_URL for PostgreSQL in production
+# Database: Defaults to SQLite locally, supports DATABASE_URL for PostgreSQL in
+# production
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -100,13 +109,17 @@ DATABASES = {
 
 if os.environ.get("DATABASE_URL"):
     import dj_database_url
-    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=not DEBUG)
 
+    DATABASES["default"] = dj_database_url.config(
+        conn_max_age=600, ssl_require=not DEBUG
+    )
+
+PASSWORD_VALIDATION = "django.contrib.auth.password_validation"
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": f"{PASSWORD_VALIDATION}.UserAttributeSimilarityValidator"},
+    {"NAME": f"{PASSWORD_VALIDATION}.MinimumLengthValidator"},
+    {"NAME": f"{PASSWORD_VALIDATION}.CommonPasswordValidator"},
+    {"NAME": f"{PASSWORD_VALIDATION}.NumericPasswordValidator"},
 ]
 
 LANGUAGE_CODE = "en-gb"
@@ -120,7 +133,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
-# Uploaded photos go to Cloudinary when CLOUDINARY_URL is set (Heroku, whose disk is
+# Uploaded photos go to Cloudinary when CLOUDINARY_URL is set (Heroku, whose
+# disk is
 # wiped on every restart), and to the local media/ folder otherwise.
 STORAGES = {
     "default": {
@@ -130,7 +144,9 @@ STORAGES = {
             else "django.core.files.storage.FileSystemStorage"
         )
     },
-    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -141,7 +157,8 @@ LOGIN_REDIRECT_URL = "reviews:index"
 LOGOUT_REDIRECT_URL = "reviews:index"
 
 # Login rate limiting (django-axes): 5 wrong passwords for one account from one
-# address locks that combination out for 1 hour. Covers the site login and /admin.
+# address locks that combination out for 1 hour. Covers the site login and
+# /admin.
 AUTHENTICATION_BACKENDS = [
     "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
@@ -173,7 +190,9 @@ X_FRAME_OPTIONS = "DENY"
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "True").lower() in (
+    SECURE_SSL_REDIRECT = os.environ.get(
+        "DJANGO_SECURE_SSL_REDIRECT", "True"
+    ).lower() in (
         "true",
         "1",
         "yes",
