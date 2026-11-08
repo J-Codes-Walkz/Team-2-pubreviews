@@ -18,3 +18,7 @@ graphify-out/*
 !graphify-out/graph.html
 !graphify-out/graph.json
 !graphify-out/GRAPH_REPORT.md
+
+# Raw test evidence (e.g. mobiletests.zip) can contain usernames; only
+# covered copies in docs/images/ are committed.
+*.zip

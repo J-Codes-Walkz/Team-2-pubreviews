@@ -136,7 +136,27 @@ Full details, acceptance criteria and tasks are in each linked issue.
 - Password reset by email (the site has no email service yet, so there is no "Forgot password?" link).
 - A Content-Security-Policy header (needs care because the site loads Bootstrap, Font Awesome and Google Fonts from CDNs).
 
-<!-- Add screenshots of each feature here once the site is deployed -->
+### Screenshots
+
+All screenshots are of the live site. Usernames are covered.
+
+**Desktop (1440px)**
+
+| Homepage and filters | Filtered: City Centre + cask ale |
+|---|---|
+| <img src="docs/images/desktop/desktop-home.png" alt="Homepage hero with the filter bar for district, pub style, search, sort and amenities" width="420"> | <img src="docs/images/desktop/desktop-filtered.png" alt="Filtered results: 23 City Centre pubs with cask ale, shown as cards with ratings and prices" width="420"> |
+| **Pub page** | **Register** |
+| <img src="docs/images/desktop/desktop-pub.png" alt="All Bar One pub page with photo, district and style badges, community score panel and amenities" width="420"> | <img src="docs/images/desktop/desktop-register.png" alt="Register form with username, email, password and confirmation fields" width="420"> |
+
+**Mobile (iPhone, Safari)**
+
+| Homepage | Filters | Pagination |
+|---|---|---|
+| <img src="docs/images/mobile/mobile-home.png" alt="Mobile homepage hero with Log a Pint Review and Filter buttons" width="200"> | <img src="docs/images/mobile/mobile-filters.png" alt="Mobile filter panel: district, pub style, search, sort, amenities and GPS button" width="200"> | <img src="docs/images/mobile/mobile-pagination.png" alt="Pub card, page 1 of 40 pagination and the footer on mobile" width="200"> |
+| **Rate a pub** | **Community scores & prices** | **Review form** |
+| <img src="docs/images/mobile/mobile-rate-a-pub.png" alt="Rate and review form on a pub page, with the star rating picker open and a success toast" width="200"> | <img src="docs/images/mobile/mobile-community-scores.png" alt="Community average scores, What's on Tap price list and pub amenities on mobile" width="200"> | <img src="docs/images/mobile/mobile-review-form.png" alt="Full review form: auto-filled amenities, card summary and publication status" width="200"> |
+| **Pint Passport** | **District stamps** | **Brummie badges** |
+| <img src="docs/images/mobile/mobile-passport.png" alt="Pint Passport header with reviews, cheers, wishlist and average pint stats" width="200"> | <img src="docs/images/mobile/mobile-district-stamps.png" alt="District stamps grid with City Centre stamped and other districts locked" width="200"> | <img src="docs/images/mobile/mobile-badges.png" alt="Brummie badges with three unlocked and progress shown on the locked ones" width="200"> |
 
 ---
 
@@ -210,6 +230,7 @@ Choose a username, an optional email and a strong password when prompted. The pa
 - The live site has its own copy of the shared superuser, created once with `heroku run python manage.py createsuperuser`, and its own password.
 - Accounts are never added to `birmingham_pubs.json`; an automated test checks for this.
 - The shared admin login is kept in the team's password manager, never in the repo, issues or chat.
+- Use a normal account (not the admin one) to post test reviews, so the admin username never appears on public pages.
 - The admin login is rate-limited in the same way as the site login (see [Security](#security)).
 
 ---
@@ -265,7 +286,7 @@ A pre-launch security review was run across the whole project (not just recent c
 | HTTPS & headers | HTTPS redirect, HSTS (1 year), secure and HttpOnly cookies, `X-Frame-Options: DENY` and `nosniff`. `python manage.py check --deploy` reports no issues. |
 | Dependencies | Django 5.2 LTS (receives security fixes until April 2028). `pip-audit` found no known vulnerabilities in the packages the site runs on. GitHub CodeQL scans every pull request. |
 
-**Known gaps** (see [Future features](#future-features)): no Content-Security-Policy header yet, and no password reset by email.
+**Known gaps** (see [Future features](#future-features)): no Content-Security-Policy header yet, no password reset by email, and Wikimedia Commons sets a third-party cookie when its pub photos load (see [Validators](#validators)).
 
 ---
 
@@ -297,6 +318,7 @@ The tests for the draft, missing-photo and Unsplash fixes in the Bugs table belo
 
 | Step | What it catches |
 |---|---|
+| `pycodestyle` (rules in `setup.cfg`) | Python code that breaks PEP8 |
 | `manage.py check` | broken settings, URLs or models |
 | `makemigrations --check` | a model change without its migration |
 | `migrate` + `loaddata birmingham_pubs` on a fresh database | a fixture that won't load, like the leftover-account bug in the Bugs table |
@@ -324,15 +346,38 @@ GitHub CodeQL also scans every pull request and push to `main` for security issu
 | Draft | Save as draft | Hidden from homepage and other users; visible in author's Pint Passport | Pass |
 | Responsive | Check mobile, tablet, desktop | Layout adapts with no horizontal scroll | Pass |
 
+### Mobile testing (iPhone, Safari, live site, 6 November 2026)
+
+Screenshots of each step are in [Screenshots](#screenshots).
+
+| Feature | Action | Expected result | Pass? |
+|---|---|---|---|
+| Homepage | Open the live site | Hero, "Log a Pint Review" and "Filter by Area & Amenities" fit the screen; the menu collapses into the ☰ button | Pass |
+| Filters | Open the filter panel | District, pub style, search, sort, amenity ticks and the GPS button stack in one column | Pass |
+| Pagination | Scroll to the bottom of the list | Previous / Page 1 of 40 / Next, then the footer, with no sideways scroll | Pass |
+| Rate a pub | Pick 1–5 stars for pint quality, atmosphere and value, add a pint and price, submit | iOS picker opens for each rating; "Cheers! Your review … has been added!" toast | Pass |
+| Community scores | View the pub after rating | Averages, the "What's on Tap" price and amenities update | Pass |
+| Pint Passport | Open My Pint Passport | Stats, district stamps (City Centre stamped) and badges (5 of 9 unlocked) display correctly | Pass |
+| Review form | Write a full review | Auto-filled amenities, card summary and Published/Draft choice are usable on a phone | Pass |
+
+**Narrow screens:** each page was also measured in Chrome with phone emulation at **320px** and **375px** wide (homepage, filtered results, a pub page, log in, register and the 404 page). None is wider than the screen, so nothing scrolls sideways. At 320px the ☰ button drops below the logo, but it still works.
+
 ### Validators
+
+Re-checked on 8 November 2026. Each tool was run on the real pages, and the problems found were fixed (see the Bugs table).
 
 | Tool | Result |
 |---|---|
-| [W3C HTML Validator](https://validator.w3.org/) | Pass (semantic HTML5, associated form labels, `aria-label` attributes) |
-| [W3C CSS Validator](https://jigsaw.w3.org/css-validator/) | Pass (0 errors) |
-| PEP8 ([CI Python Linter](https://pep8ci.herokuapp.com/)) | Pass |
-| Lighthouse — Desktop | **99 Performance / 100 Accessibility / 100 Best Practices / 100 SEO** |
-| Lighthouse — Mobile | **95 Performance / 100 Accessibility / 100 Best Practices / 100 SEO** |
+| [W3C HTML Validator](https://validator.w3.org/nu/) | **0 errors on all 10 pages checked**: homepage, filtered results, pub page and 404 (logged out); log in and register; homepage, pub page, new review form and Pint Passport (logged in). There is 1 warning on the review form: an empty heading in the hidden auto-fill banner, which JavaScript fills in when a pub is chosen. |
+| [W3C CSS Validator](https://jigsaw.w3.org/css-validator/) | **0 errors, 0 warnings** for the site's own CSS (the `<style>` block in `base.html`). Bootstrap and Font Awesome load from CDNs and are not ours to validate. |
+| PEP8 (`pycodestyle`, the same rules as the [CI Python Linter](https://pep8ci.herokuapp.com/)) | **0 issues** in the app code (`reviews/` views, models, forms, admin, urls and tests; `second_city_pint/`; `manage.py`), and CI checks this on every pull request. The one-off pub import scripts in `reviews/management/commands/` and Django's generated migrations are excluded (see `setup.cfg`): the scripts contain long pub descriptions and break the 79-character line limit about 400 times. |
+| Accessibility (axe-core, WCAG 2.2 A and AA) | **0 violations** on 9 pages, logged out and logged in (homepage, pub page, log in, register, 404, new review form, Pint Passport) |
+| Lighthouse: Desktop | **98 Performance / 100 Accessibility / 77 Best Practices / 100 SEO** |
+| Lighthouse: Mobile | **96 Performance / 100 Accessibility / 77 Best Practices / 100 SEO** |
+
+**Why Best Practices is 77:** the pub photos come from Wikimedia Commons, and Wikimedia sets a tracking cookie (`WMF-Uniq`) on each image. Chrome now marks third-party cookies down. Our code doesn't set it, and the only fix would be hosting all 470 photos ourselves. Pages without Wikimedia photos, such as register, score 100.
+
+Performance was measured on the live site. Accessibility, Best Practices and SEO were measured after the fixes in the Bugs table, so they apply once those fixes are deployed.
 
 ### Bugs
 
@@ -347,6 +392,10 @@ GitHub CodeQL also scans every pull request and push to `main` for security issu
 | CodeQL alert (high): `card_image_url` matched `"images.unsplash.com/"` anywhere in the URL | Compares the URL's real hostname with `urlparse` (test added) |
 | Uploaded photos would show as broken images on the live site: Django only serves `media/` in debug mode, and Heroku wipes uploads on restart | Uploads are stored on Cloudinary when `CLOUDINARY_URL` is set |
 | Django 5.1 no longer receives security fixes, and logins had no limit on password guesses | Upgraded to Django 5.2 LTS and added django-axes (tests added) |
+| W3C HTML errors: the favicon's `data:` address had unencoded characters, the star rating `<div>` had an `aria-label` but no role, a pub page heading jumped from `h1` to `h3`, and the review form had an `<img>` with an empty `src` | Encoded the favicon address, added `role="img"`, moved the pub page's headings up one level (same look, via Bootstrap's `h4`/`h5`/`h6` classes), and gave the image the default pub photo |
+| Text too pale to read (WCAG AA needs 4.5:1): Bootstrap's grey and red outline buttons, the tab links, and the locked Passport stamps and badges (faded with `opacity-75`) were 4.1–4.4:1 | Darker shades of the same colours in `base.html` (5.4:1 or better), and removed the fade from locked stamps and badges |
+| The register form's labels weren't linked to their inputs, so screen readers didn't announce them | Added `for="{{ field.id_for_label }}"`, as on the login form |
+| 180 PEP8 issues in the app code (mostly lines over 79 characters) | Reformatted with `black` at 79 characters, rewrapped long comments, and added a `detail_url()` helper for the repeated redirects; CI now checks PEP8 |
 
 ---
 

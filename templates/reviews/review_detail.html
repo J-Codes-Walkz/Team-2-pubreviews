@@ -91,9 +91,9 @@
                     <!-- Community Pint & Pub Photo Gallery -->
                     {% if review.gallery_photos %}
                     <div class="mb-4 pt-3 border-top">
-                        <h3 class="h6 text-uppercase fw-bold text-muted mb-3">
+                        <h2 class="h6 text-uppercase fw-bold text-muted mb-3">
                             <i class="fa-solid fa-images text-warning me-1"></i>Community Pint &amp; Pub Photos ({{ review.gallery_photos|length }})
-                        </h3>
+                        </h2>
                         <div class="row g-2">
                             {% for photo in review.gallery_photos %}
                             <div class="col-6 col-md-4">
@@ -146,9 +146,9 @@
             <!-- Community Reviews, Star Ratings & Pint Reports Section -->
             <section id="comments-section" class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-                    <h3 class="h4 mb-0">
+                    <h2 class="h4 mb-0">
                         <i class="fa-solid fa-star text-warning me-2"></i>Community Reviews &amp; Pint Reports ({{ review.community_review_count }})
-                    </h3>
+                    </h2>
                     <a href="{% url 'reviews:create' %}?pub={{ review.slug }}" class="btn btn-outline-secondary btn-sm">
                         <i class="fa-solid fa-expand me-1"></i>Open Full-Page Review Editor
                     </a>
@@ -206,9 +206,9 @@
 
                 <!-- Inline Community Review + Pint Price + Photo Upload Form -->
                 <div id="add-community-review" class="mt-4 pt-4 border-top">
-                    <h4 class="h5 fw-bold mb-3">
+                    <h3 class="h5 fw-bold mb-3">
                         <i class="fa-solid fa-beer-mug-empty text-warning me-2"></i>Rate &amp; Review {{ review.pub_name }}
-                    </h4>
+                    </h3>
                     {% if user.is_authenticated %}
                     <form method="post" action="{% url 'reviews:add_comment' review.slug %}" enctype="multipart/form-data">
                         {% csrf_token %}
@@ -304,9 +304,9 @@
                 <!-- What's on Tap & Real Pint Price Tracker -->
                 <div class="mb-4 pb-3 border-bottom">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h4 class="h6 text-uppercase fw-bold text-muted mb-0">
+                        <h3 class="h6 text-uppercase fw-bold text-muted mb-0">
                             <i class="fa-solid fa-beer-mug-empty text-warning me-1"></i>What's on Tap &amp; Prices
-                        </h4>
+                        </h3>
                         {% if review.avg_pint_price %}
                         <span class="badge bg-success">Avg £{{ review.avg_pint_price|floatformat:2 }}</span>
                         {% endif %}
@@ -330,7 +330,7 @@
                 </div>
 
                 <!-- Amenity Indicators -->
-                <h4 class="h6 text-uppercase fw-bold text-muted mb-3">Pub Amenities</h4>
+                <h3 class="h6 text-uppercase fw-bold text-muted mb-3">Pub Amenities</h3>
                 <ul class="list-group list-group-flush small">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <span>🍺 Real Cask Ale</span>
