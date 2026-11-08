@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from .models import PubReview, Comment
 
-
 MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
@@ -15,8 +14,10 @@ def validate_uploaded_image_file(uploaded_file):
     if not uploaded_file:
         return uploaded_file
 
-    # Only check brand-new uploads. A previously saved photo comes back as a stored
-    # file, and reading it would crash the form if it's gone from disk (e.g. Heroku).
+    # Only check brand-new uploads. A previously saved photo comes back as a
+    # stored
+    # file, and reading it would crash the form if it's gone from disk (e.g.
+    # Heroku).
     if not isinstance(uploaded_file, UploadedFile):
         return uploaded_file
 
@@ -36,10 +37,15 @@ def validate_uploaded_image_file(uploaded_file):
             is_jpeg = header.startswith(b"\xff\xd8\xff")
             is_png = header.startswith(b"\x89PNG\r\n\x1a\n")
             is_gif = header.startswith((b"GIF87a", b"GIF89a"))
-            is_webp = len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP"
+            is_webp = (
+                len(header) >= 12
+                and header[:4] == b"RIFF"
+                and header[8:12] == b"WEBP"
+            )
             if not (is_jpeg or is_png or is_gif or is_webp):
                 raise ValidationError(
-                    "Uploaded file is not a valid image (must be JPEG, PNG, WEBP, or GIF)."
+                    "Uploaded file is not a valid image (must be JPEG, PNG,"
+                    " WEBP, or GIF)."
                 )
     return uploaded_file
 
@@ -99,13 +105,18 @@ class PubReviewForm(forms.ModelForm):
             "title": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "e.g., Cracking Pint of Bathams and Friendly Regulars",
+                    "placeholder": (
+                        "e.g., Cracking Pint of Bathams and Friendly Regulars"
+                    ),
                 }
             ),
             "pub_name": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "Start typing a Birmingham pub name (e.g., The Craven Arms)...",
+                    "placeholder": (
+                        "Start typing a Birmingham pub name (e.g., The Craven"
+                        " Arms)..."
+                    ),
                     "list": "birmingham-pubs-datalist",
                     "autocomplete": "off",
                 }
@@ -113,7 +124,10 @@ class PubReviewForm(forms.ModelForm):
             "category": forms.Select(attrs={"class": "form-select"}),
             "brum_area": forms.Select(attrs={"class": "form-select"}),
             "address": forms.TextInput(
-                attrs={"class": "form-control", "placeholder": "e.g., 75-77 Upper Dean St"}
+                attrs={
+                    "class": "form-control",
+                    "placeholder": "e.g., 75-77 Upper Dean St",
+                }
             ),
             "postcode": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "e.g., B5 4SG"}
@@ -122,7 +136,9 @@ class PubReviewForm(forms.ModelForm):
             "pint_ordered": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "e.g., Bathams Best Bitter, Attic Intuition, Guinness",
+                    "placeholder": (
+                        "e.g., Bathams Best Bitter, Attic Intuition, Guinness"
+                    ),
                 }
             ),
             "pint_price": forms.NumberInput(
@@ -138,14 +154,20 @@ class PubReviewForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "maxlength": "220",
-                    "placeholder": "One-sentence summary for the pub card (optional — auto-generated if left blank)",
+                    "placeholder": (
+                        "One-sentence summary for the pub card (optional —"
+                        " auto-generated if left blank)"
+                    ),
                 }
             ),
             "content": forms.Textarea(
                 attrs={
                     "class": "form-control",
                     "rows": 6,
-                    "placeholder": "Tell fellow Brummies about the pint quality, atmosphere, price, and cobs...",
+                    "placeholder": (
+                        "Tell fellow Brummies about the pint quality,"
+                        " atmosphere, price, and cobs..."
+                    ),
                 }
             ),
             "uploaded_image": forms.ClearableFileInput(
@@ -157,30 +179,50 @@ class PubReviewForm(forms.ModelForm):
             "featured_image": forms.URLInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "https://... (optional if uploading a photo above)",
+                    "placeholder": (
+                        "https://... (optional if uploading a photo above)"
+                    ),
                 }
             ),
             "status": forms.Select(attrs={"class": "form-select"}),
-            "serves_cask_ale": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "serves_cobs_or_food": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "has_beer_garden": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "is_dog_friendly": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "shows_live_sports": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+            "serves_cask_ale": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "serves_cobs_or_food": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "has_beer_garden": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "is_dog_friendly": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "shows_live_sports": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
         }
 
     def clean_uploaded_image(self):
-        return validate_uploaded_image_file(self.cleaned_data.get("uploaded_image"))
+        return validate_uploaded_image_file(
+            self.cleaned_data.get("uploaded_image")
+        )
 
     def clean_pint_price(self):
         price = self.cleaned_data.get("pint_price")
-        if price is not None and (price < Decimal("1.00") or price > Decimal("25.00")):
-            raise ValidationError("Pint price must be between £1.00 and £25.00.")
+        if price is not None and (
+            price < Decimal("1.00") or price > Decimal("25.00")
+        ):
+            raise ValidationError(
+                "Pint price must be between £1.00 and £25.00."
+            )
         return price
 
     def clean_featured_image(self):
         url = (self.cleaned_data.get("featured_image") or "").strip()
         if url and not url.lower().startswith(("http://", "https://")):
-            raise ValidationError("Image URL must start with http:// or https://.")
+            raise ValidationError(
+                "Image URL must start with http:// or https://."
+            )
         return url
 
 
@@ -230,7 +272,10 @@ class CommentForm(forms.ModelForm):
             "pint_ordered": forms.TextInput(
                 attrs={
                     "class": "form-control form-control-sm",
-                    "placeholder": "e.g., Bathams Best Bitter, Intuition Pale, Guinness...",
+                    "placeholder": (
+                        "e.g., Bathams Best Bitter, Intuition Pale,"
+                        " Guinness..."
+                    ),
                 }
             ),
             "pint_price": forms.NumberInput(
@@ -252,25 +297,36 @@ class CommentForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "rows": 3,
-                    "placeholder": "Share how the pint kept, what's on the hand-pulls, the cobs, and the vibe...",
+                    "placeholder": (
+                        "Share how the pint kept, what's on the hand-pulls,"
+                        " the cobs, and the vibe..."
+                    ),
                 }
             ),
         }
 
     def clean_uploaded_image(self):
-        return validate_uploaded_image_file(self.cleaned_data.get("uploaded_image"))
+        return validate_uploaded_image_file(
+            self.cleaned_data.get("uploaded_image")
+        )
 
     def clean_pint_price(self):
         price = self.cleaned_data.get("pint_price")
-        if price is not None and (price < Decimal("1.00") or price > Decimal("25.00")):
-            raise ValidationError("Pint price must be between £1.00 and £25.00.")
+        if price is not None and (
+            price < Decimal("1.00") or price > Decimal("25.00")
+        ):
+            raise ValidationError(
+                "Pint price must be between £1.00 and £25.00."
+            )
         return price
 
 
 class BrummieRegisterForm(UserCreationForm):
     email = forms.EmailField(
         required=True,
-        widget=forms.EmailInput(attrs={"class": "form-control", "placeholder": "you@example.co.uk"}),
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "placeholder": "you@example.co.uk"}
+        ),
     )
 
     class Meta(UserCreationForm.Meta):

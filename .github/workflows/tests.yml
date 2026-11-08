@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: PEP8 (pycodestyle, settings in setup.cfg)
+        run: |
+          pip install pycodestyle
+          pycodestyle reviews second_city_pint manage.py
+
       - name: Django system check
         run: python manage.py check
 

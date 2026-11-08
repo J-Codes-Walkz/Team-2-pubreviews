@@ -38,6 +38,11 @@ def haversine_miles(lat1, lon1, lat2, lon2):
     return r_miles * c
 
 
+def detail_url(slug, section):
+    """A pub page's URL, scrolled to one section (e.g. "comments-section")."""
+    return reverse("reviews:detail", kwargs={"slug": slug}) + "#" + section
+
+
 class ReviewListView(ListView):
     model = PubReview
     template_name = "reviews/index.html"
@@ -124,7 +129,10 @@ class ReviewListView(ListView):
                 and r.longitude is not None
             ):
                 r.distance_miles = round(
-                    haversine_miles(user_lat, user_lng, r.latitude, r.longitude), 2
+                    haversine_miles(
+                        user_lat, user_lng, r.latitude, r.longitude
+                    ),
+                    2,
                 )
             else:
                 r.distance_miles = None
@@ -132,14 +140,23 @@ class ReviewListView(ListView):
         if sort == "nearest":
             if user_lat is not None and user_lng is not None:
                 # Closest pubs first (grouped into 0.1-mile proximity bands),
-                # then best average rating within that proximity, then exact distance
+                # then best average rating within that proximity, then exact
+                # distance
                 reviews_list.sort(
                     key=lambda r: (
                         0 if r.distance_miles is not None else 1,
-                        round(r.distance_miles, 1) if r.distance_miles is not None else 9999.0,
+                        (
+                            round(r.distance_miles, 1)
+                            if r.distance_miles is not None
+                            else 9999.0
+                        ),
                         -r.is_reviewed,
                         -r.avg_score,
-                        r.distance_miles if r.distance_miles is not None else 9999.0,
+                        (
+                            r.distance_miles
+                            if r.distance_miles is not None
+                            else 9999.0
+                        ),
                         -r.like_count,
                     )
                 )
@@ -159,7 +176,11 @@ class ReviewListView(ListView):
                 key=lambda r: (
                     -r.is_reviewed,
                     -r.avg_score,
-                    r.distance_miles if r.distance_miles is not None else 9999.0,
+                    (
+                        r.distance_miles
+                        if r.distance_miles is not None
+                        else 9999.0
+                    ),
                     -r.like_count,
                     -r.created_on.timestamp(),
                 )
@@ -169,10 +190,18 @@ class ReviewListView(ListView):
             reviews_list.sort(
                 key=lambda r: (
                     0 if r.cached_avg_pint_price is not None else 1,
-                    r.cached_avg_pint_price if r.cached_avg_pint_price is not None else 999.0,
+                    (
+                        r.cached_avg_pint_price
+                        if r.cached_avg_pint_price is not None
+                        else 999.0
+                    ),
                     -r.is_reviewed,
                     -r.avg_score,
-                    r.distance_miles if r.distance_miles is not None else 9999.0,
+                    (
+                        r.distance_miles
+                        if r.distance_miles is not None
+                        else 9999.0
+                    ),
                 )
             )
         elif sort == "most_liked":
@@ -181,7 +210,11 @@ class ReviewListView(ListView):
                     -r.like_count,
                     -r.is_reviewed,
                     -r.avg_score,
-                    r.distance_miles if r.distance_miles is not None else 9999.0,
+                    (
+                        r.distance_miles
+                        if r.distance_miles is not None
+                        else 9999.0
+                    ),
                 )
             )
         else:
@@ -216,7 +249,8 @@ class ReviewListView(ListView):
         context["user_lng"] = user_lng if user_lng is not None else ""
         context["has_gps"] = user_lat is not None and user_lng is not None
         context["active_amenities"] = {
-            key: self.request.GET.get(key) == "1" for key in self.AMENITY_FILTERS
+            key: self.request.GET.get(key) == "1"
+            for key in self.AMENITY_FILTERS
         }
         query_params = self.request.GET.copy()
         query_params.pop("page", None)
@@ -230,19 +264,22 @@ class ReviewDetailView(DetailView):
     context_object_name = "review"
 
     def get_queryset(self):
-        qs = PubReview.objects.select_related("author", "category").prefetch_related(
-            "likes", "bookmarks", "comments__author"
-        )
+        qs = PubReview.objects.select_related(
+            "author", "category"
+        ).prefetch_related("likes", "bookmarks", "comments__author")
         if self.request.user.is_authenticated:
             return qs.filter(
-                Q(status=PubReview.Status.PUBLISHED) | Q(author=self.request.user)
+                Q(status=PubReview.Status.PUBLISHED)
+                | Q(author=self.request.user)
             )
         return qs.filter(status=PubReview.Status.PUBLISHED)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         review = self.object
-        context["comments"] = review.comments.filter(approved=True).select_related("author")
+        context["comments"] = review.comments.filter(
+            approved=True
+        ).select_related("author")
         context["comment_form"] = CommentForm()
         context["user_has_liked"] = (
             self.request.user.is_authenticated
@@ -268,9 +305,15 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
         pub_name = self.request.GET.get("pub_name", "").strip()
         source = None
         if pub_slug:
-            source = PubReview.objects.select_related("category").filter(slug=pub_slug).first()
+            source = (
+                PubReview.objects.select_related("category")
+                .filter(slug=pub_slug)
+                .first()
+            )
         if not source and pub_name:
-            qs = PubReview.objects.select_related("category").filter(pub_name__iexact=pub_name)
+            qs = PubReview.objects.select_related("category").filter(
+                pub_name__iexact=pub_name
+            )
             brum_area = self.request.GET.get("brum_area", "").strip()
             if brum_area:
                 qs = qs.filter(brum_area=brum_area)
@@ -282,23 +325,28 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
         initial = super().get_initial()
         source_pub = self._get_source_pub()
         if source_pub:
-            initial.update(
-                {
-                    "pub_name": source_pub.pub_name,
-                    "brum_area": source_pub.brum_area,
-                    "address": source_pub.address,
-                    "postcode": source_pub.postcode,
-                    "category": source_pub.category_id,
-                    "price_point": source_pub.price_point,
-                    "serves_cask_ale": source_pub.serves_cask_ale,
-                    "serves_cobs_or_food": source_pub.serves_cobs_or_food,
-                    "has_beer_garden": source_pub.has_beer_garden,
-                    "is_dog_friendly": source_pub.is_dog_friendly,
-                    "shows_live_sports": source_pub.shows_live_sports,
-                    "featured_image": source_pub.featured_image,
-                }
-            )
-        for field in ("pub_name", "brum_area", "address", "postcode", "category", "price_point"):
+            initial.update({
+                "pub_name": source_pub.pub_name,
+                "brum_area": source_pub.brum_area,
+                "address": source_pub.address,
+                "postcode": source_pub.postcode,
+                "category": source_pub.category_id,
+                "price_point": source_pub.price_point,
+                "serves_cask_ale": source_pub.serves_cask_ale,
+                "serves_cobs_or_food": source_pub.serves_cobs_or_food,
+                "has_beer_garden": source_pub.has_beer_garden,
+                "is_dog_friendly": source_pub.is_dog_friendly,
+                "shows_live_sports": source_pub.shows_live_sports,
+                "featured_image": source_pub.featured_image,
+            })
+        for field in (
+            "pub_name",
+            "brum_area",
+            "address",
+            "postcode",
+            "category",
+            "price_point",
+        ):
             val = self.request.GET.get(field)
             if val:
                 initial[field] = val
@@ -332,7 +380,8 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        # Look up any existing record for this pub to preserve GPS coordinates & fallback image
+        # Look up any existing record for this pub to preserve GPS coordinates
+        # & fallback image
         existing_pub = PubReview.objects.filter(
             pub_name__iexact=form.instance.pub_name.strip(),
             brum_area=form.instance.brum_area,
@@ -343,9 +392,15 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
             ).first()
 
         if existing_pub:
-            if form.instance.latitude is None and existing_pub.latitude is not None:
+            if (
+                form.instance.latitude is None
+                and existing_pub.latitude is not None
+            ):
                 form.instance.latitude = existing_pub.latitude
-            if form.instance.longitude is None and existing_pub.longitude is not None:
+            if (
+                form.instance.longitude is None
+                and existing_pub.longitude is not None
+            ):
                 form.instance.longitude = existing_pub.longitude
             if (
                 not form.instance.featured_image
@@ -353,8 +408,10 @@ class ReviewCreateView(LoginRequiredMixin, CreateView):
             ) and existing_pub.featured_image:
                 form.instance.featured_image = existing_pub.featured_image
 
-        # Find any unreviewed directory placeholder(s) for this same pub so we can
-        # move their comments, likes, and bookmarks onto the new review instead of losing them.
+        # Find any unreviewed directory placeholder(s) for this same pub so we
+        # can
+        # move their comments, likes, and bookmarks onto the new review instead
+        # of losing them.
         placeholders = list(
             PubReview.objects.filter(
                 author__username="pub_directory",
@@ -386,7 +443,9 @@ class ReviewUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user == review.author
 
     def handle_no_permission(self):
-        messages.error(self.request, "Hold on! You can only edit your own pub reviews.")
+        messages.error(
+            self.request, "Hold on! You can only edit your own pub reviews."
+        )
         return super().handle_no_permission()
 
     def form_valid(self, form):
@@ -408,23 +467,31 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user == review.author
 
     def handle_no_permission(self):
-        messages.error(self.request, "Hold on! You can only delete your own pub reviews.")
+        messages.error(
+            self.request, "Hold on! You can only delete your own pub reviews."
+        )
         return super().handle_no_permission()
 
     def form_valid(self, form):
         review = self.get_object()
         pub_name = review.pub_name
-        # Only published pubs are kept as directory listings: a deleted draft was
+        # Only published pubs are kept as directory listings: a deleted draft
+        # was
         # never public, so it must be really deleted rather than published.
-        has_community_activity = review.status == PubReview.Status.PUBLISHED and (
-            review.comments.exists()
-            or review.likes.exists()
-            or review.bookmarks.exists()
-            or User.objects.filter(username="pub_directory").exists()
+        has_community_activity = (
+            review.status == PubReview.Status.PUBLISHED
+            and (
+                review.comments.exists()
+                or review.likes.exists()
+                or review.bookmarks.exists()
+                or User.objects.filter(username="pub_directory").exists()
+            )
         )
         if has_community_activity:
-            # Revert the pub back to an unreviewed Birmingham directory listing so
-            # other users' comments, likes, bookmarks, and the pub entry are preserved.
+            # Revert the pub back to an unreviewed Birmingham directory listing
+            # so
+            # other users' comments, likes, bookmarks, and the pub entry are
+            # preserved.
             directory_user, created = User.objects.get_or_create(
                 username="pub_directory",
                 defaults={"email": "directory@secondcitypint.co.uk"},
@@ -437,11 +504,17 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             base_title = f"{review.pub_name} — {area_label}"[:190]
             candidate_title = base_title
             counter = 2
-            while PubReview.objects.filter(title=candidate_title).exclude(pk=review.pk).exists():
+            while (
+                PubReview.objects.filter(title=candidate_title)
+                .exclude(pk=review.pk)
+                .exists()
+            ):
                 candidate_title = f"{base_title} ({counter})"
                 counter += 1
 
-            cat_name = review.category.name if review.category else "Birmingham Pub"
+            cat_name = (
+                review.category.name if review.category else "Birmingham Pub"
+            )
             loc_str = (
                 f" at {review.address}, {review.postcode}"
                 if review.address and review.postcode
@@ -450,8 +523,9 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             review.author = directory_user
             review.title = candidate_title
             review.content = (
-                f"{review.pub_name} is a {cat_name.lower()} in {area_label}{loc_str}. "
-                f"Have you visited for a pint recently? Add your rating, pint price, and review below!"
+                f"{review.pub_name} is a {cat_name.lower()} in"
+                f" {area_label}{loc_str}. Have you visited for a pint"
+                " recently? Add your rating, pint price, and review below!"
             )
             review.excerpt = f"{cat_name} in {area_label}{loc_str}."[:220]
             review.pint_ordered = ""
@@ -464,10 +538,14 @@ class ReviewDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             review.value_rating = 4
             review.status = PubReview.Status.PUBLISHED
             review.save()
-            messages.warning(self.request, f"Your review of {pub_name} has been deleted.")
+            messages.warning(
+                self.request, f"Your review of {pub_name} has been deleted."
+            )
             return redirect(self.get_success_url())
 
-        messages.warning(self.request, f"Your review of {pub_name} has been deleted.")
+        messages.warning(
+            self.request, f"Your review of {pub_name} has been deleted."
+        )
         return super().form_valid(form)
 
 
@@ -478,11 +556,15 @@ class LikeReviewView(LoginRequiredMixin, View):
         )
         if review.likes.filter(id=request.user.id).exists():
             review.likes.remove(request.user)
-            messages.info(request, f"Removed your cheers from {review.pub_name}.")
+            messages.info(
+                request, f"Removed your cheers from {review.pub_name}."
+            )
         else:
             review.likes.add(request.user)
-            messages.success(request, f"You raised a glass to {review.pub_name}! 🍻")
-        return redirect(f"{reverse('reviews:detail', kwargs={'slug': slug})}#engagement-bar")
+            messages.success(
+                request, f"You raised a glass to {review.pub_name}! 🍻"
+            )
+        return redirect(detail_url(slug, "engagement-bar"))
 
 
 class ToggleBookmarkView(LoginRequiredMixin, View):
@@ -500,7 +582,8 @@ class ToggleBookmarkView(LoginRequiredMixin, View):
             review.bookmarks.add(request.user)
             messages.success(
                 request,
-                f"Saved {review.pub_name} to your 'Want to Visit' Pint Passport! 🗺️",
+                f"Saved {review.pub_name} to your 'Want to Visit' Pint"
+                " Passport! 🗺️",
             )
         next_url = request.POST.get("next")
         if next_url and url_has_allowed_host_and_scheme(
@@ -509,7 +592,7 @@ class ToggleBookmarkView(LoginRequiredMixin, View):
             require_https=request.is_secure(),
         ):
             return redirect(next_url)
-        return redirect(f"{reverse('reviews:detail', kwargs={'slug': slug})}#engagement-bar")
+        return redirect(detail_url(slug, "engagement-bar"))
 
 
 class MyPassportRedirectView(LoginRequiredMixin, View):
@@ -531,7 +614,8 @@ class PintPassportView(DetailView):
         context = super().get_context_data(**kwargs)
         profile_user = self.object
         is_own_passport = (
-            self.request.user.is_authenticated and self.request.user == profile_user
+            self.request.user.is_authenticated
+            and self.request.user == profile_user
         )
 
         base_qs = (
@@ -549,17 +633,22 @@ class PintPassportView(DetailView):
 
         published_reviews = (
             base_qs.filter(
-                Q(author=profile_user) | Q(comments__author=profile_user, comments__approved=True),
+                Q(author=profile_user)
+                | Q(comments__author=profile_user, comments__approved=True),
                 status=PubReview.Status.PUBLISHED,
             )
             .distinct()
             .order_by("-created_on")
         )
 
-        user_comments = Comment.objects.filter(author=profile_user, approved=True)
+        user_comments = Comment.objects.filter(
+            author=profile_user, approved=True
+        )
 
         draft_reviews = (
-            base_qs.filter(author=profile_user, status=PubReview.Status.DRAFT).order_by("-updated_on")
+            base_qs.filter(
+                author=profile_user, status=PubReview.Status.DRAFT
+            ).order_by("-updated_on")
             if is_own_passport
             else PubReview.objects.none()
         )
@@ -576,32 +665,40 @@ class PintPassportView(DetailView):
 
         # Total cheers received on this user's own authored published reviews
         total_cheers_received = sum(
-            r.like_count for r in published_reviews if r.author_id == profile_user.id
+            r.like_count
+            for r in published_reviews
+            if r.author_id == profile_user.id
         )
 
-        # Average Pint Quality rating given by this reviewer across main reviews & community reviews
+        # Average Pint Quality rating given by this reviewer across main
+        # reviews & community reviews
         pint_scores = list(
             PubReview.objects.filter(
                 author=profile_user, status=PubReview.Status.PUBLISHED
             ).values_list("pint_quality_rating", flat=True)
         ) + list(user_comments.values_list("pint_quality_rating", flat=True))
-        avg_pint_rating = round(sum(pint_scores) / len(pint_scores), 1) if pint_scores else 0.0
+        avg_pint_rating = (
+            round(sum(pint_scores) / len(pint_scores), 1)
+            if pint_scores
+            else 0.0
+        )
 
-        # District Stamps: stamped if user has reviewed OR cheered a pub in that Brum district
-        reviewed_areas = set(published_reviews.values_list("brum_area", flat=True))
+        # District Stamps: stamped if user has reviewed OR cheered a pub in
+        # that Brum district
+        reviewed_areas = set(
+            published_reviews.values_list("brum_area", flat=True)
+        )
         liked_areas = set(liked_reviews.values_list("brum_area", flat=True))
         stamped_area_codes = reviewed_areas | liked_areas
 
         district_stamps = []
         for code, label in PubReview.BrumArea.choices:
-            district_stamps.append(
-                {
-                    "code": code,
-                    "label": label,
-                    "stamped": code in stamped_area_codes,
-                    "reviewed": code in reviewed_areas,
-                }
-            )
+            district_stamps.append({
+                "code": code,
+                "label": label,
+                "stamped": code in stamped_area_codes,
+                "reviewed": code in reviewed_areas,
+            })
 
         # Earned Brummie Badges with Progress Tracking
         total_user_reviews = len(pint_scores)
@@ -614,7 +711,9 @@ class PintPassportView(DetailView):
             or liked_reviews.filter(serves_cobs_or_food=True).exists()
         )
         logged_pint_prices = (
-            PubReview.objects.filter(author=profile_user, pint_price__isnull=False).count()
+            PubReview.objects.filter(
+                author=profile_user, pint_price__isnull=False
+            ).count()
             + user_comments.filter(pint_price__isnull=False).count()
         )
         uploaded_photos_count = (
@@ -622,7 +721,9 @@ class PintPassportView(DetailView):
             .exclude(uploaded_image="")
             .exclude(uploaded_image__isnull=True)
             .count()
-            + user_comments.exclude(uploaded_image="").exclude(uploaded_image__isnull=True).count()
+            + user_comments.exclude(uploaded_image="")
+            .exclude(uploaded_image__isnull=True)
+            .count()
         )
         southside_areas = {
             PubReview.BrumArea.STIRCHLEY,
@@ -646,77 +747,111 @@ class PintPassportView(DetailView):
             {
                 "icon": "🍺",
                 "title": "Cask Ale Connoisseur",
-                "description": "Reviewed or cheered a proper hand-pulled cask boozer",
+                "description": (
+                    "Reviewed or cheered a proper hand-pulled cask boozer"
+                ),
                 "earned": has_cask,
-                "progress_label": "Unlocked!" if has_cask else "0 / 1 cask pub",
+                "progress_label": (
+                    "Unlocked!" if has_cask else "0 / 1 cask pub"
+                ),
             },
             {
                 "icon": "💷",
                 "title": "Pint Price Spotter",
-                "description": "Logged the pint ordered & price paid (£) on a review",
+                "description": (
+                    "Logged the pint ordered & price paid (£) on a review"
+                ),
                 "earned": logged_pint_prices >= 1,
-                "progress_label": f"{min(logged_pint_prices, 1)} / 1 pint price logged",
+                "progress_label": (
+                    f"{min(logged_pint_prices, 1)} / 1 pint price logged"
+                ),
             },
             {
                 "icon": "📸",
                 "title": "Pint Photographer",
-                "description": "Uploaded a real photo of a Birmingham pub or pint",
+                "description": (
+                    "Uploaded a real photo of a Birmingham pub or pint"
+                ),
                 "earned": uploaded_photos_count >= 1,
-                "progress_label": f"{min(uploaded_photos_count, 1)} / 1 photo uploaded",
+                "progress_label": (
+                    f"{min(uploaded_photos_count, 1)} / 1 photo uploaded"
+                ),
             },
             {
                 "icon": "🗺️",
                 "title": "Brum District Explorer",
-                "description": "Stamped 3 or more Birmingham districts in the Pint Passport",
+                "description": (
+                    "Stamped 3 or more Birmingham districts in the Pint"
+                    " Passport"
+                ),
                 "earned": len(stamped_area_codes) >= 3,
-                "progress_label": f"{min(len(stamped_area_codes), 3)} / 3 districts",
+                "progress_label": (
+                    f"{min(len(stamped_area_codes), 3)} / 3 districts"
+                ),
             },
             {
                 "icon": "👑",
                 "title": "Lord Mayor of Brum",
-                "description": "Stamped 8 or more of Birmingham's 32 districts",
+                "description": (
+                    "Stamped 8 or more of Birmingham's 32 districts"
+                ),
                 "earned": len(stamped_area_codes) >= 8,
-                "progress_label": f"{min(len(stamped_area_codes), 8)} / 8 districts",
+                "progress_label": (
+                    f"{min(len(stamped_area_codes), 8)} / 8 districts"
+                ),
             },
             {
                 "icon": "🏭",
                 "title": "Southside & Beer Mile Hophead",
                 "description": "Stamped Stirchley, Moseley, or Kings Heath",
                 "earned": bool(stamped_area_codes & southside_areas),
-                "progress_label": "Unlocked!" if (stamped_area_codes & southside_areas) else "Visit Stirchley / Moseley / KH",
+                "progress_label": (
+                    "Unlocked!"
+                    if (stamped_area_codes & southside_areas)
+                    else "Visit Stirchley / Moseley / KH"
+                ),
             },
             {
                 "icon": "💎",
                 "title": "JQ, Digbeth & Central Regular",
-                "description": "Stamped the Jewellery Quarter, Digbeth, or City Centre",
+                "description": (
+                    "Stamped the Jewellery Quarter, Digbeth, or City Centre"
+                ),
                 "earned": bool(stamped_area_codes & central_areas),
-                "progress_label": "Unlocked!" if (stamped_area_codes & central_areas) else "Visit JQ / Digbeth / Central",
+                "progress_label": (
+                    "Unlocked!"
+                    if (stamped_area_codes & central_areas)
+                    else "Visit JQ / Digbeth / Central"
+                ),
             },
             {
                 "icon": "🥪",
                 "title": "Cob & Crust Loyalist",
-                "description": "Backed a Birmingham pub serving classic crusty cobs or grub",
+                "description": (
+                    "Backed a Birmingham pub serving classic crusty cobs or"
+                    " grub"
+                ),
                 "earned": has_cobs,
-                "progress_label": "Unlocked!" if has_cobs else "0 / 1 food/cob pub",
+                "progress_label": (
+                    "Unlocked!" if has_cobs else "0 / 1 food/cob pub"
+                ),
             },
         ]
 
-        context.update(
-            {
-                "is_own_passport": is_own_passport,
-                "published_reviews": published_reviews,
-                "draft_reviews": draft_reviews,
-                "bookmarked_reviews": bookmarked_reviews,
-                "liked_reviews": liked_reviews,
-                "total_cheers_received": total_cheers_received,
-                "avg_pint_rating": avg_pint_rating,
-                "district_stamps": district_stamps,
-                "stamped_count": len(stamped_area_codes),
-                "total_districts": len(PubReview.BrumArea.choices),
-                "badges": badges,
-                "earned_badges_count": sum(1 for b in badges if b["earned"]),
-            }
-        )
+        context.update({
+            "is_own_passport": is_own_passport,
+            "published_reviews": published_reviews,
+            "draft_reviews": draft_reviews,
+            "bookmarked_reviews": bookmarked_reviews,
+            "liked_reviews": liked_reviews,
+            "total_cheers_received": total_cheers_received,
+            "avg_pint_rating": avg_pint_rating,
+            "district_stamps": district_stamps,
+            "stamped_count": len(stamped_area_codes),
+            "total_districts": len(PubReview.BrumArea.choices),
+            "badges": badges,
+            "earned_badges_count": sum(1 for b in badges if b["earned"]),
+        })
         return context
 
 
@@ -733,11 +868,15 @@ class CommentCreateView(LoginRequiredMixin, View):
             comment.save()
             messages.success(
                 request,
-                f"Cheers! Your review and {comment.overall_rating}/5 rating for {review.pub_name} have been added!",
+                f"Cheers! Your review and {comment.overall_rating}/5 rating"
+                f" for {review.pub_name} have been added!",
             )
         else:
-            messages.error(request, "Could not post your review. Please check the form fields.")
-        return redirect(f"{reverse('reviews:detail', kwargs={'slug': slug})}#comments-section")
+            messages.error(
+                request,
+                "Could not post your review. Please check the form fields.",
+            )
+        return redirect(detail_url(slug, "comments-section"))
 
 
 class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -746,10 +885,14 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def test_func(self):
         comment = self.get_comment()
-        return self.request.user == comment.author or self.request.user.is_staff
+        return (
+            self.request.user == comment.author or self.request.user.is_staff
+        )
 
     def handle_no_permission(self):
-        messages.error(self.request, "Hold on! You can only delete your own comments.")
+        messages.error(
+            self.request, "Hold on! You can only delete your own comments."
+        )
         return super().handle_no_permission()
 
     def post(self, request, pk):
@@ -757,7 +900,7 @@ class CommentDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         review_slug = comment.review.slug
         comment.delete()
         messages.warning(request, "Your comment was removed.")
-        return redirect(f"{reverse('reviews:detail', kwargs={'slug': review_slug})}#comments-section")
+        return redirect(detail_url(review_slug, "comments-section"))
 
 
 class RegisterView(CreateView):
@@ -770,6 +913,7 @@ class RegisterView(CreateView):
         login(self.request, self.object)
         messages.success(
             self.request,
-            f"Welcome to The Second City Pint, {self.object.username}! Grab a stool.",
+            f"Welcome to The Second City Pint, {self.object.username}! Grab a"
+            " stool.",
         )
         return response
