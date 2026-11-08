@@ -376,7 +376,7 @@ Screenshots, the 470-pub fixture, uploaded media and the local database are left
 |---|---|
 | Jamie Walker | [@J-Codes-Walkz](https://github.com/J-Codes-Walkz) |
 | Paul Brotheridge | [@paulybruv](https://github.com/paulybruv) |
-| | [@manjnagra12-lgtm](https://github.com/manjnagra12-lgtm) |
+| Manj Nagra | [@manjnagra12-lgtm](https://github.com/manjnagra12-lgtm) |
 
 ---
 
